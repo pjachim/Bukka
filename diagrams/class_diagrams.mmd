@@ -1,0 +1,57 @@
+classDiagram
+    Pipeline --o Pipeline Step
+    Polars Schema Constructor -- Dataset Schema Constructor: Inherits
+    Polars Schema Constructor -- Schema: Constructs
+    Dataset -- Polars Schema Constructor: Calls
+    Pipeline Step -- Operation
+    Project -- Pipeline
+    Project -- Dataset
+    Operation -- Criteria
+    Criteria -- Data Type
+    Data Type -- Schema
+    Dataset -- Schema: Has Schema
+    Pipeline -- Schema: References
+
+    class Dataset{
+        +dataframe
+        +api
+        +schema
+        +build_schema()
+    }
+
+    class Dataset Schema Constructor{
+
+    }
+
+    class Polars Schema Constructor {
+
+    }
+    
+    class Pipeline{
+        +int age
+        +String gender
+        +write()
+        +construct()
+        ~\_\_repr__()
+        ~\_\_getitem__()
+    }
+
+    class Pipeline Step{
+      -int sizeInFeet
+      -steps()
+    }
+
+    class Operation {
+        +make_pipeline_step()
+        +define_method()
+
+    }
+
+    class Project {
+        +pipeline_output_directory
+        +Dataset
+        +optimize_for
+        +build_prototype()
+    }
+
+    class Criteria
