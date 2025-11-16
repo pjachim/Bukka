@@ -65,7 +65,11 @@ class FileManager:
         """
         # Convert all input path arguments to Path objects for consistent handling.
         self.project_path: Path = Path(project_path)
-        self.orig_dataset: Path = Path(orig_dataset)
+
+        if orig_dataset is not None:
+            self.orig_dataset: Path = Path(orig_dataset)
+        else:
+            self.orig_dataset = None
 
         # Build all necessary directory and file paths immediately upon initialization.
         self._build_paths()
@@ -97,7 +101,8 @@ class FileManager:
 
         # Determine the final dataset path within the 'data' directory.
         # It uses the original file's name.
-        self.dataset_path: Path = self.data_path / self.orig_dataset.name
+        if self.orig_dataset is not None:
+            self.dataset_path: Path = self.data_path / self.orig_dataset.name
 
         # Paths for standard files (these will not be created by build_skeleton
         # but are tracked for consistency/future methods)
@@ -161,10 +166,11 @@ class FileManager:
         # --- 4. Copy Dataset ---
         # The copy2 function is used as it attempts to preserve metadata (like timestamps).
         # This copies the source file (orig_dataset) to the destination path (dataset_path).
-        try:
-            shutil.copy2(self.orig_dataset, self.dataset_path)
-        except FileNotFoundError as e:
-            # Re-raise the error with a more informative message.
-            raise FileNotFoundError(
-                f"Original dataset file not found: {self.orig_dataset}"
-            ) from e
+        if self.orig_dataset is not None:
+            try:
+                shutil.copy2(self.orig_dataset, self.dataset_path)
+            except FileNotFoundError as e:
+                # Re-raise the error with a more informative message.
+                raise FileNotFoundError(
+                    f"Original dataset file not found: {self.orig_dataset}"
+                ) from e

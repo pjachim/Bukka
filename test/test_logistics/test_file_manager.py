@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 import shutil
 from typing import Generator
-from logistics.files.file_manager import FileManager
+from bukka.logistics.files.file_manager import FileManager
 
 # A fixture to create a temporary, isolated directory structure for testing.
 # This ensures tests are clean and don't affect the actual filesystem.
