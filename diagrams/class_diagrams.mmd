@@ -4,54 +4,69 @@ classDiagram
     Polars Schema Constructor -- Schema: Constructs
     Dataset -- Polars Schema Constructor: Calls
     Pipeline Step -- Operation
-    Project -- Pipeline
-    Project -- Dataset
+    project.Project -- Pipeline
+    project.Project -- Dataset
     Operation -- Criteria
     Criteria -- Data Type
     Data Type -- Schema
     Dataset -- Schema: Has Schema
     Pipeline -- Schema: References
 
-    class Dataset{
-        +dataframe
-        +api
-        +schema
-        +build_schema()
+    namespace logistics {
+        class project.Project {
+            +pipeline_output_directory
+            +dataset
+            +backend
+            +optimize_for
+            +file_manager
+            +build_prototype()
+        }
+
+        class project.FileManager {
+            +pipeline_directory
+            +project_name
+            +build_skeleton()
+        }
+
     }
 
-    class Dataset Schema Constructor{
+    namespace expert_system {
+        class Dataset{
+            +dataframe
+            +api
+            +schema
+            +build_schema()
+        }
 
-    }
+        class Dataset Schema Constructor{
 
-    class Polars Schema Constructor {
+        }
 
+        class Polars Schema Constructor {
+
+        }
+        class Criteria
+        class Schema
+        class DataType
     }
     
-    class Pipeline{
-        +int age
-        +String gender
-        +write()
-        +construct()
-        ~\_\_repr__()
-        ~\_\_getitem__()
+    namespace code_writing {
+        class Pipeline{
+            +int age
+            +String gender
+            +write()
+            +construct()
+            ~\_\_repr__()
+            ~\_\_getitem__()
+        }
+
+        class Pipeline Step{
+            -int sizeInFeet
+            -steps()
+        }
+
+        class Operation {
+            +make_pipeline_step()
+            +define_method()
+        }
     }
-
-    class Pipeline Step{
-      -int sizeInFeet
-      -steps()
-    }
-
-    class Operation {
-        +make_pipeline_step()
-        +define_method()
-
-    }
-
-    class Project {
-        +pipeline_output_directory
-        +Dataset
-        +optimize_for
-        +build_prototype()
-    }
-
-    class Criteria
