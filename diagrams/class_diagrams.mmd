@@ -1,14 +1,13 @@
 classDiagram
     Pipeline --o Pipeline Step
-    Polars Schema Constructor -- Dataset Schema Constructor: Inherits
-    Polars Schema Constructor -- Schema: Constructs
-    Dataset -- Polars Schema Constructor: Calls
-    Pipeline Step -- Operation
+    Dataset Schema Constructor -- Polars Schema Constructor: Calls
+    Dataset Schema Constructor -- Schema: Constructs
+    Dataset -- Dataset Schema Constructor: Calls
+    Pipeline Step -- Criteria
     project.Project -- Pipeline
     project.Project -- Dataset
-    Operation -- Criteria
-    Criteria -- Data Type
-    Data Type -- Schema
+    Criteria -- ColumnDescription
+    ColumnDescription -- Schema
     Dataset -- Schema: Has Schema
     Pipeline -- Schema: References
 
@@ -25,7 +24,7 @@ classDiagram
         class project.FileManager {
             +pipeline_directory
             +project_name
-            +build_skeleton()
+            +
         }
 
     }
@@ -39,21 +38,38 @@ classDiagram
         }
 
         class Dataset Schema Constructor{
-
+            +backend
+            -_setup_backend()
+            +mean()
         }
 
         class Polars Schema Constructor {
-
+            -_filter()
+            -_make_column()
+            +mean()
+            +median()
+            +type()
+            +statistical_type()
+            +nulls_percent()
+            +train_test()
+            +write_parquet()
+            +read_parquet()
+            +read_csv()
         }
-        class Criteria
+        class Criteria {
+            +test_column()
+            +create_pipeline_step()
+            +
+        }
         class Schema
-        class DataType
+        class ColumnDescription {
+            +
+        }
     }
     
     namespace code_writing {
         class Pipeline{
-            +int age
-            +String gender
+            +pipeline_steps
             +write()
             +construct()
             ~\_\_repr__()
@@ -61,12 +77,11 @@ classDiagram
         }
 
         class Pipeline Step{
-            -int sizeInFeet
-            -steps()
-        }
-
-        class Operation {
-            +make_pipeline_step()
-            +define_method()
+            -import
+            -name
+            -definition
+            -step_code
+            +write_step()
+            +__init__()
         }
     }
