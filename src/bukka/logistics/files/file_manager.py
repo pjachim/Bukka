@@ -1,5 +1,5 @@
 from pathlib import Path
-import shutil
+import shutil, sys
 from typing import Union, List
 
 # Define a type alias for paths that can be represented as strings or Path objects.
@@ -174,3 +174,8 @@ class FileManager:
                 raise FileNotFoundError(
                     f"Original dataset file not found: {self.orig_dataset}"
                 ) from e
+            
+        if sys.platform == 'win32':
+            self.python_path = self.virtual_env / "Scripts" / "python.exe"
+        else:
+            self.python_path = self.virtual_env / "bin" / "python"
