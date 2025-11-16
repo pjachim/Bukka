@@ -25,9 +25,14 @@ class EnvironmentBuilder:
     def _install_packages(self):
         with open(self.file_manager.requirements_path, 'w') as f:
             f.write(requirements.strip())
-        
-        pip_install_instructions = f' -m pip install -r {str(self.file_manager.requirements_path)}'
 
-        subprocess.run(
-            [str(self.file_manager.python_path), pip_install_instructions]
-        )
+        cmd_list = [
+            str(self.file_manager.python_path),
+            '-m',
+            'pip',
+            'install',
+            '-r',
+            str(self.file_manager.requirements_path)
+        ]
+
+        subprocess.run(cmd_list)
