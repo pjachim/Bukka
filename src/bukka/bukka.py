@@ -1,13 +1,13 @@
 import argparse
-from bukka.logistics.files.file_manager import FileManager
+from bukka.logistics.project import Project
 
 def main(name, dataset):
-    file_manager = FileManager(
+    proj = Project(
         name,
-        orig_dataset=dataset
+        dataset_path=dataset
     )
 
-    file_manager.build_skeleton()
+    proj.run()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
