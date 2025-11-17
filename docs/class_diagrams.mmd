@@ -1,0 +1,132 @@
+classDiagram
+    Pipeline --o Pipeline Step
+    Polars API Wrapper -- Dataset Schema Constructor: Calls
+    Dataset Schema Constructor -- Schema: Constructs
+    Dataset -- Dataset Schema Constructor: Calls
+    Pipeline Step -- Pipeline Interface
+    Pipeline Interface -- Pipeline
+    Project -- Pipeline
+    Project -- Dataset
+    Pipeline Interface -- Pipeline Builder
+    Pipeline Builder -- Schema
+    Problem -- Schema: A Collection Of
+    Dataset -- Schema: Has Schema
+    Pipeline Builder -- Solution
+    Project -- File Manager
+    Project -- EnvironmentBuilder
+
+    namespace logistics {
+        class Project {
+            +pipeline_output_directory
+            +dataset
+            +backend
+            +optimize_for
+            +file_manager
+            +build_prototype()
+            ~\_\_repr__()
+        }
+    }
+
+    namespace files {
+        class FileManager {
+            +project_path
+            +orig_dataset
+            +build_skeleton()
+            ~\_\_repr__()
+        }
+    }
+
+    namespace environment {
+        class EnvironmentBuilder {
+            +file_manager
+            +venv_client
+            +build_environment()
+            -_build_venv()
+            -_install_packages()
+            ~\_\_repr__()
+        }
+    }
+
+    namespace data_management {
+        class Dataset{
+            +dataframe
+            +api
+            +schema
+            +schema_constructor
+            +build_schema()
+            +write_dataset()
+            ~\_\_repr__()
+        }
+
+        class Dataset Schema Constructor{
+            +api_wrapper
+            +build_schema()
+            +read_dataset()
+            +write_dataset()
+            ~\_\_repr__()
+        }
+
+        class Polars API Wrapper {
+            + get_mean()
+            + get_std()
+            + get_null_count()
+            ~\_\_repr__()
+        }
+        
+        class Schema {
+            +problems
+            +add_problem()
+            ~\_\_get_item\_\_()
+            ~\_\_bool\_\_()
+            ~\_\_repr__()
+        }
+        class Problem {
+            +affected_columns
+            +mean
+            +is_normal
+            ~\_\_repr__()
+        }
+    }
+    
+    namespace code_writing {
+        class Pipeline{
+            +steps
+            +write()
+            +construct()
+            ~\_\_repr__()
+            ~\_\_getitem__()
+        }
+
+        class Pipeline Step{
+            +name 
+            +import
+            +pipeline_step
+            +step_params
+            ~\_\_repr__()
+
+        }
+
+        class Pipeline Interface {
+            +pipeline
+            +add_to_pipeline()
+            +make_pipeline_step()
+            +define_method()
+            ~\_\_repr__()
+        }
+    }
+
+    namespace expert_system {
+        class Solution {
+            + assumptions
+            + tests
+            +solves_problem()
+            +solution_score()
+            ~\_\_repr__()
+        }
+        class Pipeline Builder {
+            +available_solutions
+            +pick_solution()
+            +build_pipeline()
+            ~\_\_repr__()
+        }
+    }
