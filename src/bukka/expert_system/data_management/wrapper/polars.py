@@ -3,9 +3,10 @@ from pathlib import Path
 import math
 
 class PolarsOperations:
-    def __init__(self, train_df=None, full_df:pl.DataFrame | None=None):
+    def __init__(self, train_df=None, full_df:pl.DataFrame | None=None, random_seed: int | None=None):
         self.train_df = train_df
         self.full_df = full_df
+        self.random_seed = random_seed
 
     def read_csv(self, path):
         self.train_df = pl.read_csv(path)
@@ -14,6 +15,8 @@ class PolarsOperations:
         self.train_df = pl.read_parquet(path)
 
     def split_dataset(self, train_path, test_path, target_column: str, train_size: float=0.8, stratify=True, strata: list[str] | None = None):
+        self.full_df = self.full_df.sample(shuffle=True, fraction=1.0)
+
         if stratify:
             train_results: list[pl.DataFrame] = []
             test_results: list[pl.DataFrame] = []
@@ -26,8 +29,8 @@ class PolarsOperations:
                 train_results.append(train)
                 test_results.append(test)
 
-            train_df = pl.concat(train_results)
-            test_df = pl.concat(test_results)
+            train_df = pl.concat(train_results).full_df.sample(shuffle=True, fraction=1.0)
+            test_df = pl.concat(test_results).full_df.sample(shuffle=True, fraction=1.0)
 
         else:
             train_df, test_df = self._split_dataset(self.full_df, train_size=train_size)
