@@ -30,3 +30,14 @@ median_solution = solution.Solution(
     function_import="from sklearn.impute import SimpleImputer",
     function_name="SimpleImputer",
 )
+
+# For ProblemIdentifier compatibility
+impute_missing_values = null_solution
+
+remove_rows_with_nulls = solution.Solution(
+    name="remove_rows_with_nulls",
+    explanation="Removes rows containing null values from the dataset.",
+    function_kwargs={},
+    function_import="from bukka.preprocessing.nulls import remove_rows_with_nulls",
+    function_name="remove_rows_with_nulls",
+)
