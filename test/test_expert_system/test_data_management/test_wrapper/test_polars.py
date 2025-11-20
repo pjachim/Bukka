@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 import math
 from polars.testing import assert_frame_equal
-from bukka.expert_system.data_management.wrapper.polars import PolarsOperations
+from bukka.data_management.wrapper.polars import PolarsOperations
 
 # Define the same default seed used in the class for testing reproducibility
 TEST_RANDOM_SEED = 42
