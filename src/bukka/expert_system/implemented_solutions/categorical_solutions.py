@@ -10,3 +10,25 @@ onehotencoder_solution = solution.Solution(
     function_import="from sklearn.preprocessing import OneHotEncoder",
     function_name="OneHotEncoder",
 )
+
+standardize_categories_solution = solution.Solution(
+    name="standardize_categories",
+    explanation="Standardizes inconsistent categorical values (e.g., fixes case, trims whitespace, corrects typos).",
+    function_kwargs={},
+    function_import="from bukka.preprocessing.categorical import standardize_categories",
+    function_name="standardize_categories",
+)
+
+encode_categories_solution = solution.Solution(
+    name="encode_categories",
+    explanation="Encodes categorical values using ordinal or label encoding.",
+    function_kwargs={
+        "encoding_type": "ordinal"
+    },
+    function_import="from bukka.preprocessing.categorical import encode_categories",
+    function_name="encode_categories",
+)
+
+# For ProblemIdentifier compatibility
+standardize_categories = standardize_categories_solution
+encode_categories = encode_categories_solution
