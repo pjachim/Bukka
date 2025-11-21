@@ -12,7 +12,7 @@ class Project:
     """
     Represents a data science or ML project, managing its file structure and environment setup.
     """
-    def __init__(self, name: str, dataset_path: str) -> None:
+    def __init__(self, name: str, dataset_path: str, target_column: str) -> None:
         """
         Initialize a Project instance.
 
@@ -23,6 +23,7 @@ class Project:
         self.name: str = name
         self.dataset_path: str = dataset_path
         self.file_manager: FileManager | None = None
+        self.target_column: str = target_column
         self.environ_manager: EnvironmentBuilder | None = None
 
     def run(self) -> None:
@@ -31,6 +32,9 @@ class Project:
         """
         self._build_skeleton()
         self._setup_environment()
+
+        if self.dataset_path:
+            self.write_pipeline(target_column=self.target_column)
 
     def write_pipeline(self, target_column: str, dataframe_backend: str = "polars") -> str:
         """Generate a candidate pipeline and save it to the project pipelines folder.
@@ -57,7 +61,6 @@ class Project:
             # Ensure skeleton exists and dataset is copied
             self._build_skeleton()
 
-        # Create Dataset and identify problems
         dataset = Dataset(target_column, self.file_manager, dataframe_backend)
         identifier = ProblemIdentifier(dataset, target_column)
         # Run detection phases
