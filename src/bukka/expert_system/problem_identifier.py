@@ -11,14 +11,16 @@ class ProblemIdentifier:
     collects `Problem` instances into `self.problems_to_solve`.
     """
 
-    def __init__(self, dataset: Dataset) -> None:
+    def __init__(self, dataset: Dataset, target_column: str | None) -> None:
         """Create a ProblemIdentifier for `dataset`.
 
         Args:
             dataset: A `Dataset` instance that exposes a `backend`
                 with inspection helper methods and `feature_columns`.
+            target_column: The name of the target column in the dataset. if None, then clustering is assumed.
         """
         self.dataset: Dataset = dataset
+        self.target_column: str = target_column
         self.problems_to_solve: ProblemsToSolve = ProblemsToSolve()
 
     def multivariate_problems(self) -> None:
@@ -96,3 +98,34 @@ class ProblemIdentifier:
                     ],
                 )
                 self.problems_to_solve.add_problem(problem)
+
+    def _identify_ml_problem(self) -> str:
+        """Identify the type of machine learning needed."""
+        if self.target_column is None:
+            self.ml_problem = Problem(
+                problem_name="Clustering",
+                description="Without a label, unsupervised clustering is needed.",
+                solutions=[sol.clustering_solutions.clustering_analysis]
+            )
+            return
+        elif self.dataset.backend.type_of_column(self.target_column) in ["int", "float"]:
+            if self.dataset.backend.get_unq_count(self.target_column) > 20:
+                self.ml_problem = Problem(
+                    problem_name="Regression",
+                    description="The target variable is continuous.",
+                    solutions=[sol.regression_solutions.regression_analysis]
+                )
+        
+        # This means classification, as target is not None and not regression. Now let's see if it's binary or multi-class.
+        if self.dataset.backend.get_unq_count(self.target_column) == 2:
+            self.ml_problem = Problem(
+                problem_name="Binary Classification",
+                description="The target variable has two distinct classes.",
+                solutions=[sol.classification_solutions.binary_classification]
+            )
+        else:
+            self.ml_problem = Problem(
+                problem_name="Multi-class Classification",
+                description="The target variable has more than two distinct classes.",
+                solutions=[sol.classification_solutions.multi_class_classification]
+            )
