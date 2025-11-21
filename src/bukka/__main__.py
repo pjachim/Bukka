@@ -17,17 +17,11 @@ def main(name: str, dataset: str | None, target: str | None) -> None:
 
     proj = Project(
         name,
-        dataset_path=dataset
+        dataset_path=dataset,
+        target_column=target
     )
 
     proj.run()
-
-    # Generate and save a candidate pipeline (returns file path)
-    try:
-        pipeline_path = proj.write_pipeline(target_column=target)
-        logger.info(f"Generated pipeline at: {pipeline_path}")
-    except Exception as exc:  # pragma: no cover - top-level CLI safety
-        logger.error(f"Pipeline generation failed: {exc}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
