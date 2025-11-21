@@ -326,8 +326,28 @@ class PolarsOperations:
         """
         self._ensure_df()
         return self.train_df.height
+    
+    def get_unq_count(self, column: str) -> int:
+        """
+        Retrieves the number of unique values in a specified column in `self.train_df`.
 
-    # --- Internal Helper Methods ---
+        Parameters
+        ----------
+        column : str
+            The name of the column.
+
+        Raises
+        ------
+        AttributeError
+            If `self.train_df` is None.
+
+        Returns
+        -------
+        int
+            The count of unique values in the column.
+        """
+        self._ensure_df()
+        return self.train_df.select(pl.col(column).n_unique()).item()
 
     def _ensure_df(self) -> None:
         """
