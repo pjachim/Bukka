@@ -1,5 +1,6 @@
 from bukka.logistics.files import file_manager
 import pyarrow
+import pyarrow.parquet as pq
 
 class Dataset:
     """
@@ -54,7 +55,9 @@ class Dataset:
         else:
             self.feature_columns = feature_columns
 
-        self.data_schema = dict(pyarrow.parquet.read_schema(self.file_manager.train_data))
+        schema = pq.read_schema(self.file_manager.train_data)
+        # Convert pyarrow.Schema to a plain dict of column_name -> pyarrow.DataType
+        self.data_schema = {field.name: field.type for field in schema}
 
     def _set_backend(self, dataframe_backend):
         """
