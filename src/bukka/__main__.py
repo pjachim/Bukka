@@ -1,14 +1,20 @@
 import argparse
 from bukka.logistics.project import Project
-from bukka.data_management.dataset import Dataset
-from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.utils import bukka_logger
 
 logger = bukka_logger.BukkaLogger(__name__)
 
-def main(name, dataset, target):
-    logger.info('Creating Bukka project!', format_level='h1')
-    
+
+def main(name: str, dataset: str | None, target: str | None) -> None:
+    """Create a Bukka project, set it up, and generate a candidate pipeline.
+
+    Args:
+        name: Project name / path to create.
+        dataset: Path to the original dataset file (optional).
+        target: Name of the target column (optional; pass None for clustering).
+    """
+    logger.info("Creating Bukka project!", format_level="h1")
+
     proj = Project(
         name,
         dataset_path=dataset
@@ -16,15 +22,12 @@ def main(name, dataset, target):
 
     proj.run()
 
-    # identify problems in the dataset
-    dataset = Dataset(
-        target,
-        proj.file_manager.dataset_path
-    )
-
-    problem_identifier = ProblemIdentifier(dataset)
-    problem_identifier.multivariate_problems()
-    problem_identifier.univariate_problems()
+    # Generate and save a candidate pipeline (returns file path)
+    try:
+        pipeline_path = proj.write_pipeline(target_column=target)
+        logger.info(f"Generated pipeline at: {pipeline_path}")
+    except Exception as exc:  # pragma: no cover - top-level CLI safety
+        logger.error(f"Pipeline generation failed: {exc}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
