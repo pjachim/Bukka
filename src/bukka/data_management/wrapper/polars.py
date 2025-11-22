@@ -62,6 +62,38 @@ class PolarsOperations:
         # Load the Parquet file into a Polars DataFrame
         self.train_df = pl.read_parquet(path)
 
+    def load_dataset(self, path: Union[str, Path]) -> None:
+        """
+        Load a dataset file into `self.full_df`, supporting multiple input formats.
+
+        Supported formats: CSV (.csv), Parquet (.parquet), JSON (.json),
+        JSONL/NDJSON (.jsonl, .ndjson).
+
+        Parameters
+        ----------
+        path : Union[str, Path]
+            Path to the source dataset file.
+        """
+        p = Path(path)
+        suffix = p.suffix.lower()
+
+        if suffix == '.csv':
+            self.full_df = pl.read_csv(p)
+        elif suffix in ('.parquet', '.parq', '.pqt'):
+            self.full_df = pl.read_parquet(p)
+        elif suffix == '.json':
+            # Polars can read JSON; for large files consider ndjson
+            try:
+                self.full_df = pl.read_json(p)
+            except Exception:
+                # Fallback: try reading as newline-delimited JSON
+                self.full_df = pl.read_ndjson(p)
+        elif suffix in ('.jsonl', '.ndjson'):
+            self.full_df = pl.read_ndjson(p)
+        else:
+            # Unknown format — raise a helpful error rather than silently failing
+            raise ValueError(f"Unsupported dataset format: {suffix}")
+
     # --- Data Splitting/Saving Methods ---
 
     def split_dataset(self, train_path: Union[str, Path], test_path: Union[str, Path],
