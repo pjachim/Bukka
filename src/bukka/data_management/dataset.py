@@ -39,6 +39,18 @@ class Dataset:
 
         self._set_backend(dataframe_backend)
 
+        # If a source dataset was copied into the project by FileManager,
+        # attempt to load it into the backend so it can be split. The
+        # backend is expected to expose a `load_dataset(path)` method; if
+        # it does not, skip loading and assume the backend will manage data
+        # itself (this keeps unit tests that monkeypatch the backend working).
+        dataset_path = getattr(self.file_manager, 'dataset_path', None)
+        if dataset_path is not None and dataset_path.exists():
+            load_fn = getattr(self.backend, 'load_dataset', None)
+            if callable(load_fn):
+                load_fn(dataset_path)
+
+        # Always ask the backend to split and write train/test as Parquet files.
         self.backend.split_dataset(
             train_path=self.file_manager.train_data,
             test_path=self.file_manager.test_data,
