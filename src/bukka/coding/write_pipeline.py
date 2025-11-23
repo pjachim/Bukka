@@ -155,7 +155,7 @@ class PipelineWriter:
         for var_name in self.instantiations.keys():
             pipeline_items.append(f"('{var_name}', {var_name})")
 
-        pipeline_body = ", ".join(pipeline_items)
+        pipeline_body = ",\n\t".join(pipeline_items)
 
         lines: List[str] = []
         if self.imports:
@@ -169,6 +169,6 @@ class PipelineWriter:
 
         # Add the pipeline construction. We don't import Pipeline here to avoid
         # coupling; the import string should be present in `self.imports` if needed.
-        lines.append(f"pipeline = Pipeline([{pipeline_body}])")
+        lines.append(f"\npipeline = Pipeline([\n\t{pipeline_body}\n])")
 
         self.pipeline_definition = "\n".join(lines)
