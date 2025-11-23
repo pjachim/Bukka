@@ -31,7 +31,7 @@ class TestSolution:
 
 class TestProblemsContainer:
     def test_problem_and_problems_to_solve(self):
-        p = Problem(problem_name="Nulls", description="has nulls", solutions=[])
+        p = Problem(problem_name="Nulls", description="has nulls", features=["col1"], solutions=[], problem_type="transformer")
         # add a solution placeholder
         p.add_solution("sol_func")
         assert p[0] == "sol_func"
