@@ -62,6 +62,12 @@ class Dataset:
 
         # Always ask the backend to split and write train/test as Parquet files.
         logger.debug(f"Splitting dataset into train/test with train_size={train_size}")
+        if strata is None and target_column is None:
+            stratify = False
+            strata = []
+        if stratify is None:
+            strata = []
+
         self.backend.split_dataset(
             train_path=self.file_manager.train_data,
             test_path=self.file_manager.test_data,
