@@ -1,6 +1,9 @@
 from bukka.logistics.files import file_manager
 import pyarrow
 import pyarrow.parquet as pq
+from bukka.utils.bukka_logger import BukkaLogger
+
+logger = BukkaLogger(__name__)
 
 class Dataset:
     """
@@ -34,9 +37,11 @@ class Dataset:
             train_size=0.8,
             feature_columns: list[str] | None = None
         ):
+        logger.debug(f"Initializing Dataset with target_column='{target_column}', backend='{dataframe_backend}', train_size={train_size}, stratify={stratify}")
         self.file_manager = file_manager
         self.target_column = target_column
 
+        logger.debug("Setting up dataframe backend")
         self._set_backend(dataframe_backend)
 
         # If a source dataset was copied into the project by FileManager,
@@ -46,30 +51,50 @@ class Dataset:
         # itself (this keeps unit tests that monkeypatch the backend working).
         dataset_path = getattr(self.file_manager, 'dataset_path', None)
         if dataset_path is not None and dataset_path.exists():
+            logger.debug(f"Loading dataset from: {dataset_path}")
             load_fn = getattr(self.backend, 'load_dataset', None)
             if callable(load_fn):
                 load_fn(dataset_path)
+            else:
+                logger.debug("Backend does not have load_dataset method, skipping dataset loading")
+        else:
+            logger.debug("No dataset path found or dataset does not exist, skipping dataset loading")
 
         # Always ask the backend to split and write train/test as Parquet files.
+        logger.debug(f"Splitting dataset into train/test with train_size={train_size}")
+        if strata is None and target_column is None:
+            stratify = False
+            strata = []
+        if stratify is None:
+            strata = []
+
         self.backend.split_dataset(
-            train_path=self.file_manager.train_data,
-            test_path=self.file_manager.test_data,
+            train_path=self.file_manager.train_data_file,
+            test_path=self.file_manager.test_data_file,
             target_column=target_column,
             strata=strata,
             train_size=train_size,
             stratify=stratify
         )
+        logger.debug("Dataset split completed")
 
         if feature_columns == None:
-            self.feature_columns = self.backend.train_df.get_column_names()
-            self.feature_columns.remove(target_column)
+            logger.debug("Auto-detecting feature columns from training data")
+            self.feature_columns = self.backend.get_column_names()
+            if target_column:
+                self.feature_columns.remove(target_column)
+            logger.debug(f"Detected {len(self.feature_columns)} feature columns")
         
         else:
+            logger.debug(f"Using provided feature columns: {len(feature_columns)} columns")
             self.feature_columns = feature_columns
 
-        schema = pq.read_schema(self.file_manager.train_data)
+        logger.debug(f"Reading schema from: {self.file_manager.train_data_file}")
+        schema = pq.read_schema(self.file_manager.train_data_file)
         # Convert pyarrow.Schema to a plain dict of column_name -> pyarrow.DataType
         self.data_schema = {field.name: field.type for field in schema}
+        logger.debug(f"Schema loaded with {len(self.data_schema)} columns")
+        logger.debug("Dataset initialization complete")
 
     def _set_backend(self, dataframe_backend):
         """
@@ -80,12 +105,15 @@ class Dataset:
         Raises:
             NotImplementedError: If the specified backend is not supported.
         """
+        logger.debug(f"Setting backend to: {dataframe_backend}")
         if dataframe_backend == 'polars':
             from bukka.data_management.wrapper.polars import PolarsOperations
 
             self.backend = PolarsOperations()
+            logger.debug("PolarsOperations backend initialized")
 
         else:
+            logger.error(f"Unsupported backend: {dataframe_backend}")
             raise NotImplementedError()
         
     def __repr__(self):

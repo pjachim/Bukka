@@ -5,7 +5,12 @@ from bukka.utils import bukka_logger
 logger = bukka_logger.BukkaLogger(__name__)
 
 
-def main(name: str, dataset: str | None, target: str | None) -> None:
+def main(
+        name: str,
+        dataset: str | None,
+        target: str | None,
+        skip_venv: bool = False
+    ) -> None:
     """Create a Bukka project, set it up, and generate a candidate pipeline.
 
     Args:
@@ -18,7 +23,8 @@ def main(name: str, dataset: str | None, target: str | None) -> None:
     proj = Project(
         name,
         dataset_path=dataset,
-        target_column=target
+        target_column=target,
+        skip_venv=skip_venv
     )
 
     proj.run()
@@ -29,11 +35,13 @@ if __name__ == '__main__':
     parser.add_argument('--name', '-n', type=str, required=True)
     parser.add_argument('--dataset', '-d', type=str, required=False, default=None)
     parser.add_argument('--target', '-t', type=str, required=False, default=None)
+    parser.add_argument('--skip-venv', '-sv', action='store_true', help='Skip virtual environment setup')
 
     args = parser.parse_args()
 
     main(
         name=args.name,
         dataset=args.dataset,
-        target=args.target
+        target=args.target,
+        skip_venv=args.skip_venv
     )

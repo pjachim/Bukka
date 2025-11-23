@@ -1,7 +1,10 @@
 import polars as pl
 from pathlib import Path
-import math, random
+import math, random, os
 from typing import Optional, Union, List, Dict, Tuple
+from bukka.utils.bukka_logger import BukkaLogger
+
+logger = BukkaLogger(__name__)
 
 class PolarsOperations:
     """
@@ -31,10 +34,12 @@ class PolarsOperations:
         full_df : Optional[pl.DataFrame], default=None
             Initial DataFrame to set as the full, unsplit DataFrame.
         """
+        logger.debug(f"Initializing PolarsOperations with random_seed={random_seed}")
         self.train_df: Optional[pl.DataFrame] = train_df
         self.full_df: Optional[pl.DataFrame] = full_df
         self.orig_random_seed = random_seed
         self.current_seed = random_seed
+        logger.debug(f"PolarsOperations initialized: train_df={'set' if train_df is not None else 'None'}, full_df={'set' if full_df is not None else 'None'}")
 
     # --- Data Loading Methods ---
 
@@ -47,8 +52,10 @@ class PolarsOperations:
         path : Union[str, Path]
             The file path to the CSV file.
         """
+        logger.debug(f"Reading CSV file from: {path}")
         # Load the CSV file into a Polars DataFrame
         self.train_df = pl.read_csv(path)
+        logger.debug(f"CSV loaded: {self.train_df.height} rows, {len(self.train_df.columns)} columns")
 
     def read_parquet(self, path: Union[str, Path]) -> None:
         """
@@ -59,8 +66,10 @@ class PolarsOperations:
         path : Union[str, Path]
             The file path to the Parquet file.
         """
+        logger.debug(f"Reading Parquet file from: {path}")
         # Load the Parquet file into a Polars DataFrame
         self.train_df = pl.read_parquet(path)
+        logger.debug(f"Parquet loaded: {self.train_df.height} rows, {len(self.train_df.columns)} columns")
 
     def load_dataset(self, path: Union[str, Path]) -> None:
         """
@@ -74,8 +83,10 @@ class PolarsOperations:
         path : Union[str, Path]
             Path to the source dataset file.
         """
+        logger.debug(f"Loading dataset from: {path}")
         p = Path(path)
         suffix = p.suffix.lower()
+        logger.debug(f"Detected file format: {suffix}")
 
         if suffix == '.csv':
             self.full_df = pl.read_csv(p)
@@ -92,7 +103,10 @@ class PolarsOperations:
             self.full_df = pl.read_ndjson(p)
         else:
             # Unknown format — raise a helpful error rather than silently failing
+            logger.error(f"Unsupported dataset format: {suffix}")
             raise ValueError(f"Unsupported dataset format: {suffix}")
+        
+        logger.debug(f"Dataset loaded: {self.full_df.height} rows, {len(self.full_df.columns)} columns")
 
     # --- Data Splitting/Saving Methods ---
 
@@ -126,9 +140,11 @@ class PolarsOperations:
         AttributeError
             If `self.full_df` is None.
         """
+        logger.debug(f"Starting dataset split: train_size={train_size}, stratify={stratify}, strata={strata}")
         # Ensure that the full_df exists before attempting to split
         if self.full_df is None:
-             raise AttributeError("self.full_df is None. Cannot split the dataset.")
+            logger.error("Attempted to split dataset but self.full_df is None")
+            raise AttributeError("self.full_df is None. Cannot split the dataset.")
 
         if stratify:
             # Initialize lists to hold split dataframes for concatenation
@@ -137,25 +153,36 @@ class PolarsOperations:
 
             # Determine the columns to use for stratification
             strata_cols = strata if strata is not None else [target_column]
+            logger.debug(f"Performing stratified split on columns: {strata_cols}")
 
             # Partition the full DataFrame by the stratification columns
+            partition_count = 0
             for df in self.full_df.partition_by(strata_cols):
+                partition_count += 1
+                logger.debug(f"Processing stratum {partition_count}: {df.height} rows")
                 # Split each stratum DataFrame independently, using the seed for shuffling
                 train, test = self._split_dataset(df, train_size=train_size, seed=self._random_seed())
                 train_results.append(train)
                 test_results.append(test)
+            logger.debug(f"Processed {partition_count} strata")
 
             # Concatenate the split results back into final train and test DataFrames
-            train_df = pl.concat(train_results)
-            test_df = pl.concat(test_results)
+            self.train_df = pl.concat(train_results)
+            self.test_df = pl.concat(test_results)
+            logger.debug(f"Stratified split complete: train={self.train_df.height} rows, test={self.test_df.height} rows")
 
         else:
+            logger.debug("Performing non-stratified split")
             # Perform a simple, non-stratified split on the entire full DataFrame, with shuffling
-            train_df, test_df = self._split_dataset(self.full_df, train_size=train_size, seed=self._random_seed())
+            self.train_df, self.test_df = self._split_dataset(self.full_df, train_size=train_size, seed=self._random_seed())
+            logger.debug(f"Non-stratified split complete: train={self.train_df.height} rows, test={self.test_df.height} rows")
 
         # Write the resulting DataFrames to disk as Parquet files
-        self.write_parquet(train_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), train_path)
-        self.write_parquet(test_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), test_path)
+        logger.debug(f"Writing train dataset to: {train_path}")
+        self.write_parquet(self.train_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), self._fix_write_paths(train_path))
+        logger.debug(f"Writing test dataset to: {test_path}")
+        self.write_parquet(self.test_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), self._fix_write_paths(test_path))
+        logger.debug("Dataset split and save complete")
 
 
     def write_parquet(self, df: pl.DataFrame, path: Union[str, Path]) -> None:
@@ -169,9 +196,18 @@ class PolarsOperations:
         path : Union[str, Path]
             The file path where the Parquet file will be saved.
         """
+        logger.debug(f"Writing {df.height} rows to parquet: {path}")
         # Use Polars' built-in method to write the DataFrame
         df.write_parquet(path)
 
+    def _fix_write_paths(self, write_path) -> Path:
+        """
+        Ensures that the write path is a file path. If a directory is provided, appends a default filename.
+        """
+        if os.path.isdir(write_path):
+            write_path = write_path / "data.pqt"
+
+        return write_path
 
     def _split_dataset(self, df: pl.DataFrame, train_size: float, seed: int) -> Tuple[pl.DataFrame, pl.DataFrame]:
         """
@@ -193,6 +229,7 @@ class PolarsOperations:
         tuple[pl.DataFrame, pl.DataFrame]
             A tuple containing the training DataFrame and the testing DataFrame.
         """
+        logger.debug(f"Splitting DataFrame of {df.height} rows with train_size={train_size}, seed={seed}")
         # 1. Shuffle the DataFrame for a randomized split
         shuffled_df: pl.DataFrame = df.sample(fraction=1.0, with_replacement=False, seed=seed)
         
@@ -206,6 +243,7 @@ class PolarsOperations:
         # 3. Slice the shuffled DataFrame
         train_df = shuffled_df.slice(0, n_train)
         test_df = shuffled_df.slice(n_train, n_test)
+        logger.debug(f"Split result: train={n_train} rows, test={n_test} rows")
 
         return train_df, test_df
     
@@ -215,6 +253,7 @@ class PolarsOperations:
         """
         random.seed(self.current_seed)
         self.current_seed = random.randint(1, 1_000_000)
+        logger.debug(f"Generated new random seed: {self.current_seed}")
         return self.current_seed
 
     # --- Descriptive Statistics / Metadata Methods ---
@@ -391,5 +430,29 @@ class PolarsOperations:
             If `self.train_df` is None, indicating a data loading method was not called.
         """
         if self.train_df is None:
+            logger.error("Attempted to access train_df but it is None")
             # Raise an informative error if the DataFrame is not loaded
             raise AttributeError('self.train_df is None. Call a method with the prefix read_ (e.g., read_csv), and try again.')
+        
+
+    def type_of_column(self, column: str) -> str:
+        """
+        Retrieves the data type of a specified column in `self.train_df`.
+
+        Parameters
+        ----------
+        column : str
+            The name of the column.
+
+        Raises
+        ------
+        AttributeError
+            If `self.train_df` is None.
+
+        Returns
+        -------
+        str
+            The data type of the column as a string.
+        """
+        self._ensure_df()
+        return str(self.train_df.schema[column])
