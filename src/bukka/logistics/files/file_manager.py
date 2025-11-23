@@ -88,6 +88,9 @@ class FileManager:
         self.train_data: Path = self.data_path / 'train'
         self.test_data: Path = self.data_path / 'test'
 
+        self.train_data_file: Path = self.train_data / 'train_data.pqt'
+        self.test_data_file: Path = self.test_data / 'test_data.pqt'
+
         # Pipeline related paths (treated as a Python package)
         self.pipes: Path = self.project_path / 'pipelines'
         self.generated_pipes: Path = self.pipes / 'generated'
