@@ -433,3 +433,26 @@ class PolarsOperations:
             logger.error("Attempted to access train_df but it is None")
             # Raise an informative error if the DataFrame is not loaded
             raise AttributeError('self.train_df is None. Call a method with the prefix read_ (e.g., read_csv), and try again.')
+        
+
+    def type_of_column(self, column: str) -> str:
+        """
+        Retrieves the data type of a specified column in `self.train_df`.
+
+        Parameters
+        ----------
+        column : str
+            The name of the column.
+
+        Raises
+        ------
+        AttributeError
+            If `self.train_df` is None.
+
+        Returns
+        -------
+        str
+            The data type of the column as a string.
+        """
+        self._ensure_df()
+        return str(self.train_df.schema[column])
