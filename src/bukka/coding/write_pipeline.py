@@ -29,11 +29,14 @@ class PipelineWriter:
         """
         self.problem_identifier = problem_identifier
         # Prefer random ordering for the ml_problem solutions so pop() is non-deterministic
-        try:
-            random.shuffle(self.problem_identifier.ml_problem.solutions)
-        except Exception:
-            # If ml_problem.solutions is not shufflable, ignore
-            pass
+        if hasattr(self.problem_identifier, 'ml_problem') and self.problem_identifier.ml_problem is not None:
+            try:
+                solutions = getattr(self.problem_identifier.ml_problem, 'solutions', [])
+                if solutions:
+                    random.shuffle(solutions)
+            except Exception:
+                # If ml_problem.solutions is not shufflable, ignore
+                pass
 
         # Public results filled by `write()`
         self.pipeline_steps: List[Any] = []
@@ -69,12 +72,14 @@ class PipelineWriter:
 
         # Append the ML solution (if available). Use pop() to follow the
         # original intention of selecting one solution from the shuffled list.
-        try:
-            ml_solutions = getattr(self.problem_identifier.ml_problem, "solutions", [])
-            if ml_solutions:
-                self.pipeline_steps.append((ml_solutions.pop(), self.problem_identifier.ml_problem))
-        except Exception:
-            pass
+        if hasattr(self.problem_identifier, 'ml_problem') and self.problem_identifier.ml_problem is not None:
+            try:
+                ml_solutions = getattr(self.problem_identifier.ml_problem, "solutions", [])
+                if ml_solutions:
+                    self.pipeline_steps.append((ml_solutions.pop(), self.problem_identifier.ml_problem))
+            except Exception as e:
+                # Log but don't crash if ml_problem is malformed
+                pass
 
     def _processor_selection(self) -> list[tuple[Solution, Any]]:
         """Choose one solution per problem.
