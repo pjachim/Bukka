@@ -38,7 +38,7 @@ class PipelineWriter:
         # Public results filled by `write()`
         self.pipeline_steps: List[Any] = []
         self.imports: Set[str] = set()
-        self.instantiations: List[str] = []
+        self.instantiations: Dict[str, str] = {}
         self.pipeline_definition: str = ""
 
     def write(self) -> Tuple[List[Any], Set[str]]:
@@ -109,38 +109,33 @@ class PipelineWriter:
         ``step_name = SomeTransformer(arg=val)``. The method is defensive
         and supports both small wrapper objects and tuples/lists.
         """
-        instantiations: List[str] = []
+        instantiations: dict[str, str] = {}
+        used_names: set[str] = set()
 
-        def _get_solution_obj(step: Any) -> Any:
-            # If step is a wrapper with `.solution` containing a list/tuple, unwrap it
-            if hasattr(step, "solution"):
-                sol = getattr(step, "solution")
-                if isinstance(sol, (list, tuple)) and sol:
-                    return sol[0]
-                return sol
-            return step
-
-        for idx, step in enumerate(self.pipeline_steps, start=1):
-            sol_obj = _get_solution_obj(step)
-
+        for idx, sol_obj in enumerate(self.pipeline_steps, start=1):
             # Decide a reasonable variable/name for the step
             name = None
             if hasattr(sol_obj, "name"):
-                name = getattr(sol_obj, "name")
-            elif hasattr(sol_obj, "function_name"):
-                name = getattr(sol_obj, "function_name")
-            elif hasattr(sol_obj, "__class__"):
-                name = sol_obj.__class__.__name__
+                name = sol_obj.name
             else:
                 name = f"step_{idx}"
 
             # Make a safe python identifier for the variable
             var_name = str(name).lower().replace(" ", "_")
 
+            # Ensure uniqueness by appending a counter if needed
+            original_var_name = var_name
+            counter = 1
+            while var_name in used_names:
+                var_name = f"{original_var_name}_{counter}"
+                counter += 1
+            
+            used_names.add(var_name)
+
             # Instantiate using helper method if available
             inst = sol_obj.fetch_instantiation()
 
-            instantiations.append(f"{var_name} = {inst}")
+            instantiations[var_name] = inst
 
         self.instantiations = instantiations
 
@@ -155,17 +150,10 @@ class PipelineWriter:
         if not self.instantiations:
             self._fetch_step_definitions()
 
-        # Extract variable names from instantiation strings (left side)
-        names: List[str] = []
-        for inst in self.instantiations:
-            if "=" in inst:
-                left = inst.split("=", 1)[0].strip()
-                names.append(left)
-
-        # Build pipeline tuple list
+        # Build pipeline tuple list from dict keys
         pipeline_items = []
-        for i, n in enumerate(names):
-            pipeline_items.append(f"('{n}', {n})")
+        for var_name in self.instantiations.keys():
+            pipeline_items.append(f"('{var_name}', {var_name})")
 
         pipeline_body = ", ".join(pipeline_items)
 
@@ -176,7 +164,8 @@ class PipelineWriter:
                 lines.append(imp)
 
         # Add instantiation lines
-        lines.extend(self.instantiations)
+        for var_name, inst in self.instantiations.items():
+            lines.append(f"{var_name} = {inst}")
 
         # Add the pipeline construction. We don't import Pipeline here to avoid
         # coupling; the import string should be present in `self.imports` if needed.
