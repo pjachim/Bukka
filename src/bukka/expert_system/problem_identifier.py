@@ -20,7 +20,7 @@ class ProblemIdentifier:
             target_column: The name of the target column in the dataset. if None, then clustering is assumed.
         """
         self.dataset: Dataset = dataset
-        self.target_column: str = target_column
+        self.target_column: str | None = target_column
         self.problems_to_solve: ProblemsToSolve = ProblemsToSolve()
 
     def multivariate_problems(self) -> None:
@@ -66,9 +66,10 @@ class ProblemIdentifier:
             problem = Problem(
                 problem_name="Null Values",
                 description=f"The feature '{feature}' contains null values.",
+                features=[feature],
                 solutions=[
-                    sol.null_solutions.impute_missing_values,
-                    sol.null_solutions.remove_rows_with_nulls,
+                    sol.null_solutions.mean_solution,
+                    sol.null_solutions.median_solution,
                 ],
             )
             self.problems_to_solve.add_problem(problem)
@@ -79,6 +80,7 @@ class ProblemIdentifier:
                 problem = Problem(
                     problem_name="Outliers",
                     description=f"The feature '{feature}' contains outlier values.",
+                    features=[feature],
                     solutions=[
                         sol.outlier_solutions.remove_outliers,
                         sol.outlier_solutions.cap_outliers,
@@ -92,6 +94,7 @@ class ProblemIdentifier:
                 problem = Problem(
                     problem_name="Inconsistent Categorical Data",
                     description=f"The feature '{feature}' contains inconsistent categorical data.",
+                    features=[feature],
                     solutions=[
                         sol.categorical_solutions.standardize_categories,
                         sol.categorical_solutions.encode_categories,
@@ -105,6 +108,7 @@ class ProblemIdentifier:
             self.ml_problem = Problem(
                 problem_name="Clustering",
                 description="Without a label, unsupervised clustering is needed.",
+                features=[],
                 solutions=[sol.clustering_solutions.clustering_analysis]
             )
             return
@@ -113,19 +117,22 @@ class ProblemIdentifier:
                 self.ml_problem = Problem(
                     problem_name="Regression",
                     description="The target variable is continuous.",
+                    features=[self.target_column],
                     solutions=[sol.regression_solutions.regression_analysis]
                 )
         
         # This means classification, as target is not None and not regression. Now let's see if it's binary or multi-class.
         if self.dataset.backend.get_unq_count(self.target_column) == 2:
-            self.ml_problem = Problem(
+            self.ml_problem = Problem( 
                 problem_name="Binary Classification",
                 description="The target variable has two distinct classes.",
+                features=[self.target_column],
                 solutions=[sol.classification_solutions.binary_classification]
             )
         else:
             self.ml_problem = Problem(
                 problem_name="Multi-class Classification",
                 description="The target variable has more than two distinct classes.",
+                features=[self.target_column],
                 solutions=[sol.classification_solutions.multi_class_classification]
             )

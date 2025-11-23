@@ -1,7 +1,8 @@
 class Problem:
-    def __init__(self, problem_name, description, solutions=[]):
+    def __init__(self, problem_name, description, features: list[str], solutions=[]):
         self.problem_name = problem_name
         self.description = description
+        self.features = features
         self.solutions = solutions
 
     def add_solution(self, solution):
