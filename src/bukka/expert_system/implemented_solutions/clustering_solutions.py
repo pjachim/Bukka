@@ -36,3 +36,6 @@ agglo_clustering_solution = solution.Solution(
     function_import="from sklearn.cluster import AgglomerativeClustering",
     function_name="AgglomerativeClustering",
 )
+
+# Alias for problem_identifier compatibility
+clustering_analysis = kmeans_solution

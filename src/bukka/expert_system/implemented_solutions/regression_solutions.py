@@ -23,3 +23,6 @@ ridge_regression_solution = solution.Solution(
     function_import="from sklearn.linear_model import Ridge",
     function_name="Ridge",
 )
+
+# Alias for problem_identifier compatibility
+regression_analysis = linear_regression_solution

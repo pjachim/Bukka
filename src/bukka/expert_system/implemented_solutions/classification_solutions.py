@@ -35,3 +35,7 @@ logistic_regression_solution = solution.Solution(
     function_import="from sklearn.linear_model import LogisticRegression",
     function_name="LogisticRegression",
 )
+
+# Aliases for problem_identifier compatibility
+binary_classification = logistic_regression_solution
+multi_class_classification = random_forest_solution
