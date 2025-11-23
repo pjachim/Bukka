@@ -30,21 +30,21 @@ class ProblemIdentifier:
         strong correlations and appends `Problem` instances (with
         suggested solutions) to `self.problems_to_solve`.
         """
-        if self.dataset.backend.has_multicollinearity():
-            problem = Problem(
-                problem_name="Multicollinearity",
-                description="The dataset contains multicollinear features.",
-                solutions=[sol.multivariate_solutions.remove_multicollinear_features]
-            )
-            self.problems_to_solve.add_problem(problem)
-
-        if self.dataset.backend.has_strong_correlations():
-            problem = Problem(
-                problem_name="Strong Correlations",
-                description="The dataset contains strongly correlated features.",
-                solutions=[sol.multivariate_solutions.handle_strong_correlations]
-            )
-            self.problems_to_solve.add_problem(problem)
+        #if self.dataset.backend.has_multicollinearity():
+        #    problem = Problem(
+        #        problem_name="Multicollinearity",
+        #        description="The dataset contains multicollinear features.",
+        #        solutions=[sol.multivariate_solutions.remove_multicollinear_features]
+        #    )
+        #    self.problems_to_solve.add_problem(problem)
+        #
+        #if self.dataset.backend.has_strong_correlations():
+        #    problem = Problem(
+        #        problem_name="Strong Correlations",
+        #        description="The dataset contains strongly correlated features.",
+        #        solutions=[sol.multivariate_solutions.handle_strong_correlations]
+        #    )
+        #    self.problems_to_solve.add_problem(problem)
 
     def univariate_problems(self) -> None:
         """Inspect each feature for univariate problems.
