@@ -1,6 +1,7 @@
 from typing import Any, List, Set, Tuple, Dict
 from bukka.expert_system.problem_identifier import ProblemIdentifier
 import random
+from bukka.expert_system.solution import Solution
 
 
 class PipelineWriter:
@@ -61,7 +62,7 @@ class PipelineWriter:
 
         The selected items are stored in `self.pipeline_steps` in order.
         """
-        self.pipeline_steps = []
+        self.pipeline_steps: list[Solution] = []
         # Select one processor per problem (if any)
         self.pipeline_steps += self._processor_selection()
 
@@ -74,13 +75,13 @@ class PipelineWriter:
         except Exception:
             pass
 
-    def _processor_selection(self) -> List[Any]:
+    def _processor_selection(self) -> list[Solution]:
         """Choose one solution per problem.
 
         Returns a list of chosen solution objects (exact shape depends on
         how problems/solutions are represented in the expert system).
         """
-        chosen: List[Any] = []
+        chosen: list[Solution] = []
         problems = getattr(self.problem_identifier.problems_to_solve, "problems", [])
         for p in problems:
             try:
@@ -92,46 +93,11 @@ class PipelineWriter:
                 continue
         return chosen
 
-    def _extract_import(self, solution: Any) -> str:
-        """Robustly extract an import statement from a solution object.
-
-        Tries several common attribute names and tuple/list shapes.
-        """
-        if solution is None:
-            return ""
-        # If solution is a tuple/list like (import_stmt, callable, ...)
-        if isinstance(solution, (list, tuple)) and solution:
-            first = solution[0]
-            if isinstance(first, str):
-                return first
-
-        # Common attribute names used across the codebase
-        for attr in ("function_import", "import_statement", "import", "fetch_import"):
-            if hasattr(solution, attr):
-                val = getattr(solution, attr)
-                # If it's a callable method (like fetch_import), call it
-                if callable(val):
-                    try:
-                        return val()
-                    except Exception:
-                        continue
-                if isinstance(val, str):
-                    return val
-
-        # Last resort: try calling `fetch_import()` if present
-        if hasattr(solution, "fetch_import") and callable(solution.fetch_import):
-            try:
-                return solution.fetch_import()
-            except Exception:
-                pass
-
-        return ""
-
     def _fetch_imports(self) -> None:
         """Populate `self.imports` from the selected pipeline steps."""
         imports: Set[str] = set()
         for step in self.pipeline_steps:
-            imp = self._extract_import(step)
+            imp = step.fetch_import()
             if imp:
                 imports.add(imp)
         self.imports = imports
@@ -172,31 +138,7 @@ class PipelineWriter:
             var_name = str(name).lower().replace(" ", "_")
 
             # Instantiate using helper method if available
-            inst = ""
-            if hasattr(sol_obj, "fetch_instantiation") and callable(sol_obj.fetch_instantiation):
-                try:
-                    inst = sol_obj.fetch_instantiation()
-                except Exception:
-                    inst = ""
-
-            # Fallback: attempt to build instantiation from function_name and function_kwargs
-            if not inst:
-                func_name = getattr(sol_obj, "function_name", None)
-                kwargs: Dict[str, Any] = getattr(sol_obj, "function_kwargs", {}) or {}
-                if func_name:
-                    # Build kwargs string
-                    kv_pairs: List[str] = []
-                    for k, v in kwargs.items():
-                        if isinstance(v, str):
-                            kv_pairs.append(f"{k}='{v}'")
-                        else:
-                            kv_pairs.append(f"{k}={v!r}")
-                    args_str = ", ".join(kv_pairs)
-                    inst = f"{func_name}({args_str})"
-
-            # If still no instantiation available, use repr as placeholder
-            if not inst:
-                inst = repr(sol_obj)
+            inst = sol_obj.fetch_instantiation()
 
             instantiations.append(f"{var_name} = {inst}")
 
