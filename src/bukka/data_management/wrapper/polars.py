@@ -1,6 +1,6 @@
 import polars as pl
 from pathlib import Path
-import math, random
+import math, random, os
 from typing import Optional, Union, List, Dict, Tuple
 from bukka.utils.bukka_logger import BukkaLogger
 
@@ -179,9 +179,9 @@ class PolarsOperations:
 
         # Write the resulting DataFrames to disk as Parquet files
         logger.debug(f"Writing train dataset to: {train_path}")
-        self.write_parquet(train_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), train_path)
+        self.write_parquet(train_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), self._fix_write_paths(train_path))
         logger.debug(f"Writing test dataset to: {test_path}")
-        self.write_parquet(test_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), test_path)
+        self.write_parquet(test_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), self._fix_write_paths(test_path))
         logger.debug("Dataset split and save complete")
 
 
@@ -200,6 +200,14 @@ class PolarsOperations:
         # Use Polars' built-in method to write the DataFrame
         df.write_parquet(path)
 
+    def _fix_write_paths(self, write_path) -> Path:
+        """
+        Ensures that the write path is a file path. If a directory is provided, appends a default filename.
+        """
+        if os.path.isdir(write_path):
+            write_path = write_path / "data.pqt"
+
+        return write_path
 
     def _split_dataset(self, df: pl.DataFrame, train_size: float, seed: int) -> Tuple[pl.DataFrame, pl.DataFrame]:
         """
