@@ -15,7 +15,13 @@ class Project:
     """
     Represents a data science or ML project, managing its file structure and environment setup.
     """
-    def __init__(self, name: str, dataset_path: str, target_column: str) -> None:
+    def __init__(
+            self,
+            name: str,
+            dataset_path: str,
+            target_column: str,
+            skip_venv: bool = False
+        ) -> None:
         """
         Initialize a Project instance.
 
@@ -31,6 +37,7 @@ class Project:
         self.file_manager: FileManager | None = None
         self.target_column: str = target_column
         self.environ_manager: EnvironmentBuilder | None = None
+        self.skip_venv: bool = skip_venv
         logger.debug("Project instance created")
 
     def run(self) -> None:
@@ -42,8 +49,11 @@ class Project:
         logger.info("Building project skeleton")
         self._build_skeleton()
         
-        logger.info("Setting up project environment")
-        self._setup_environment()
+        if not self.skip_venv:
+            logger.info("Setting up project environment")
+            self._setup_environment()
+        else:
+            logger.info("Skipping environment setup as per configuration")
 
         if self.dataset_path:
             logger.info("Dataset path provided, generating pipeline")
