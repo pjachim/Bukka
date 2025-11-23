@@ -69,8 +69,8 @@ class Dataset:
             strata = []
 
         self.backend.split_dataset(
-            train_path=self.file_manager.train_data,
-            test_path=self.file_manager.test_data,
+            train_path=self.file_manager.train_data_file,
+            test_path=self.file_manager.test_data_file,
             target_column=target_column,
             strata=strata,
             train_size=train_size,
@@ -80,16 +80,17 @@ class Dataset:
 
         if feature_columns == None:
             logger.debug("Auto-detecting feature columns from training data")
-            self.feature_columns = self.backend.train_df.get_column_names()
-            self.feature_columns.remove(target_column)
+            self.feature_columns = self.backend.get_column_names()
+            if target_column:
+                self.feature_columns.remove(target_column)
             logger.debug(f"Detected {len(self.feature_columns)} feature columns")
         
         else:
             logger.debug(f"Using provided feature columns: {len(feature_columns)} columns")
             self.feature_columns = feature_columns
 
-        logger.debug(f"Reading schema from: {self.file_manager.train_data}")
-        schema = pq.read_schema(self.file_manager.train_data)
+        logger.debug(f"Reading schema from: {self.file_manager.train_data_file}")
+        schema = pq.read_schema(self.file_manager.train_data_file)
         # Convert pyarrow.Schema to a plain dict of column_name -> pyarrow.DataType
         self.data_schema = {field.name: field.type for field in schema}
         logger.debug(f"Schema loaded with {len(self.data_schema)} columns")
