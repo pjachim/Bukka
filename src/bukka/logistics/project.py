@@ -7,6 +7,9 @@ from bukka.logistics.environment.environment import EnvironmentBuilder
 from bukka.data_management.dataset import Dataset
 from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.coding.write_pipeline import PipelineWriter
+from bukka.utils.bukka_logger import BukkaLogger
+
+logger = BukkaLogger(__name__)
 
 class Project:
     """
@@ -20,23 +23,43 @@ class Project:
             name (str): The name of the project (used as the project path).
             dataset_path (str): The path to the original dataset file.
         """
+        logger.info(f"Initializing Project: '{name}'")
+        logger.debug(f"Dataset path: {dataset_path}")
+        logger.debug(f"Target column: {target_column}")
         self.name: str = name
         self.dataset_path: str = dataset_path
         self.file_manager: FileManager | None = None
         self.target_column: str = target_column
         self.environ_manager: EnvironmentBuilder | None = None
+        logger.debug("Project instance created")
 
     def run(self) -> None:
         """
         Run the project setup: build the file skeleton and set up the environment.
         """
+        logger.info(f"Running project setup for '{self.name}'", format_level='h3')
+        
+        logger.info("Building project skeleton")
         self._build_skeleton()
+        
+        logger.info("Setting up project environment")
         self._setup_environment()
 
         if self.dataset_path:
+            logger.info("Dataset path provided, generating pipeline")
             self.write_pipeline(target_column=self.target_column)
+        else:
+            logger.debug("No dataset path provided, skipping pipeline generation")
+        
+        logger.info(f"Project setup complete for '{self.name}'", format_level='h4')
 
-    def write_pipeline(self, target_column: str, dataframe_backend: str = "polars") -> str:
+    def write_pipeline(
+            self,
+            target_column: str,
+            dataframe_backend: str = "polars",
+            strata: list[str] | None = None,
+            stratify: bool = True,
+        ) -> str:
         """Generate a candidate pipeline and save it to the project pipelines folder.
 
         This method creates a `Dataset` using the project's `FileManager`, runs
@@ -57,36 +80,70 @@ class Project:
         Returns:
             The absolute path (string) of the written pipeline file.
         """
+        logger.info("Starting pipeline generation", format_level='h4')
+        logger.debug(f"Target column: {target_column}")
+        logger.debug(f"Dataframe backend: {dataframe_backend}")
+        
         if self.file_manager is None:
+            logger.debug("FileManager not initialized, building skeleton")
             # Ensure skeleton exists and dataset is copied
             self._build_skeleton()
 
-        dataset = Dataset(target_column, self.file_manager, dataframe_backend)
+        logger.info("Creating Dataset instance")
+        dataset = Dataset(
+            target_column, 
+            self.file_manager, 
+            dataframe_backend, 
+            strata=strata,
+            stratify=stratify
+        )
+        logger.debug(f"Dataset created with {len(dataset.feature_columns)} features")
+        
+        logger.info("Initializing ProblemIdentifier")
         identifier = ProblemIdentifier(dataset, target_column)
+        
         # Run detection phases
+        logger.info("Running multivariate problem detection")
         identifier.multivariate_problems()
+        logger.debug("Multivariate problem detection complete")
+        
+        logger.info("Running univariate problem detection")
         identifier.univariate_problems()
+        logger.debug("Univariate problem detection complete")
+        
         # identify ml problem (may be clustering/regression/classification)
+        logger.info("Identifying ML problem type")
         try:
             identifier._identify_ml_problem()
-        except Exception:
+            logger.debug("ML problem identification complete")
+        except Exception as e:
+            logger.warn(f"Failed to identify ML problem: {e}")
             # If private method naming changes, ignore to avoid crashing here
             pass
 
         # Generate pipeline
+        logger.info("Generating pipeline code")
         writer = PipelineWriter(identifier)
+        logger.debug("PipelineWriter initialized")
+        
         _, _ = writer.write()
         pipeline_text = writer.pipeline_definition or ""
+        logger.debug(f"Pipeline code generated: {len(pipeline_text)} characters")
 
         # Prepare destination file
         gen_dir: Path = self.file_manager.generated_pipes
+        logger.debug(f"Pipeline destination directory: {gen_dir}")
         gen_dir.mkdir(parents=True, exist_ok=True)
+        
         timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
         filename = f"pipeline_{timestamp}.py"
         dest = gen_dir / filename
+        logger.debug(f"Pipeline filename: {filename}")
 
         # Write pipeline text
+        logger.info(f"Writing pipeline to: {dest}")
         dest.write_text(pipeline_text, encoding="utf-8")
+        logger.info("Pipeline generation complete", format_level='h4')
 
         return str(dest.resolve())
 
@@ -94,19 +151,36 @@ class Project:
         """
         Build the project file skeleton using FileManager.
         """
+        logger.debug("Initializing FileManager")
+        logger.debug(f"Project path: {self.name}")
+        logger.debug(f"Original dataset: {self.dataset_path}")
+        
         self.file_manager = FileManager(
             project_path=self.name,
             orig_dataset=self.dataset_path
         )
+        logger.debug("FileManager initialized")
+        
+        logger.info("Building project file skeleton")
         self.file_manager.build_skeleton()
+        logger.info("Project skeleton built successfully")
 
     def _setup_environment(self) -> None:
         """
         Set up the project environment using EnvironmentBuilder.
         """
+        logger.debug("Setting up project environment")
+        
         if self.file_manager is None:
+            logger.error("FileManager is None, cannot set up environment")
             raise RuntimeError("FileManager must be initialized before setting up the environment.")
+        
+        logger.debug("Initializing EnvironmentBuilder")
         self.environ_manager = EnvironmentBuilder(
             file_manager=self.file_manager
         )
+        logger.debug("EnvironmentBuilder initialized")
+        
+        logger.info("Building project environment (virtualenv and dependencies)")
         self.environ_manager.build_environment()
+        logger.info("Environment setup complete")
