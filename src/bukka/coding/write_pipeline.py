@@ -60,9 +60,10 @@ class PipelineWriter:
     def _arrange_pipeline(self) -> None:
         """Select processors for each identified problem and the ML step.
 
-        The selected items are stored in `self.pipeline_steps` in order.
+        The selected items are stored in `self.pipeline_steps` as tuples
+        of (solution, problem) to preserve problem metadata.
         """
-        self.pipeline_steps: list[Solution] = []
+        self.pipeline_steps: list[tuple[Solution, Any]] = []
         # Select one processor per problem (if any)
         self.pipeline_steps += self._processor_selection()
 
@@ -71,23 +72,23 @@ class PipelineWriter:
         try:
             ml_solutions = getattr(self.problem_identifier.ml_problem, "solutions", [])
             if ml_solutions:
-                self.pipeline_steps.append(ml_solutions.pop())
+                self.pipeline_steps.append((ml_solutions.pop(), self.problem_identifier.ml_problem))
         except Exception:
             pass
 
-    def _processor_selection(self) -> list[Solution]:
+    def _processor_selection(self) -> list[tuple[Solution, Any]]:
         """Choose one solution per problem.
 
-        Returns a list of chosen solution objects (exact shape depends on
-        how problems/solutions are represented in the expert system).
+        Returns a list of (solution, problem) tuples to preserve problem
+        metadata like features and problem_type.
         """
-        chosen: list[Solution] = []
+        chosen: list[tuple[Solution, Any]] = []
         problems = getattr(self.problem_identifier.problems_to_solve, "problems", [])
         for p in problems:
             try:
                 sol_list = getattr(p, "solutions", [])
                 if sol_list:
-                    chosen.append(random.choice(sol_list))
+                    chosen.append((random.choice(sol_list), p))
             except Exception:
                 # Skip problematic entries rather than crash
                 continue
@@ -96,10 +97,13 @@ class PipelineWriter:
     def _fetch_imports(self) -> None:
         """Populate `self.imports` from the selected pipeline steps."""
         imports: Set[str] = set()
-        for step in self.pipeline_steps:
-            imp = step.fetch_import()
+        for sol_obj, _ in self.pipeline_steps:
+            imp = sol_obj.fetch_import()
             if imp:
                 imports.add(imp)
+        # Add ColumnTransformer and Pipeline imports
+        imports.add("from sklearn.compose import ColumnTransformer")
+        imports.add("from sklearn.pipeline import Pipeline")
         self.imports = imports
 
     def _fetch_step_definitions(self) -> None:
@@ -112,7 +116,7 @@ class PipelineWriter:
         instantiations: dict[str, str] = {}
         used_names: set[str] = set()
 
-        for idx, sol_obj in enumerate(self.pipeline_steps, start=1):
+        for idx, (sol_obj, problem) in enumerate(self.pipeline_steps, start=1):
             # Decide a reasonable variable/name for the step
             name = None
             if hasattr(sol_obj, "name"):
@@ -140,35 +144,80 @@ class PipelineWriter:
         self.instantiations = instantiations
 
     def _define_sklearn_pipeline(self) -> None:
-        """Generate a small string representing a sklearn Pipeline creation.
+        """Generate sklearn ColumnTransformer and Pipeline code.
 
-        The string includes the instantiation lines followed by a
-        `Pipeline([...])` assignment using the variable names from
-        `self.instantiations`.
+        Separates transformers (single-column operations), manipulators
+        (multi-column operations), and models. Creates a ColumnTransformer
+        for column-specific steps, then wraps everything in a Pipeline.
         """
         # Ensure step definitions are available
         if not self.instantiations:
             self._fetch_step_definitions()
 
-        # Build pipeline tuple list from dict keys
-        pipeline_items = []
-        for var_name in self.instantiations.keys():
-            pipeline_items.append(f"('{var_name}', {var_name})")
+        # Categorize steps by type
+        transformers: List[Tuple[str, str, List[str]]] = []  # (name, var_name, columns)
+        manipulators: List[str] = []  # var_names for multi-column steps
+        model_step: str | None = None
 
-        pipeline_body = ",\n\t".join(pipeline_items)
+        for (sol_obj, problem), var_name in zip(self.pipeline_steps, self.instantiations.keys()):
+            problem_type = getattr(problem, "problem_type", None)
+            features = getattr(problem, "features", [])
+            
+            if problem_type == "transformer":
+                # Single-column transformer
+                transformers.append((var_name, var_name, features))
+            elif problem_type == "manipulator":
+                # Multi-column manipulator
+                manipulators.append(var_name)
+            elif problem_type == "model":
+                # Final model step
+                model_step = var_name
+            else:
+                # Default: treat as manipulator if no type specified
+                manipulators.append(var_name)
 
         lines: List[str] = []
         if self.imports:
-            # Add imports as provided (these are strings, likely full import lines)
+            # Add imports
             for imp in sorted(self.imports):
                 lines.append(imp)
+
+        lines.append("")  # Blank line after imports
 
         # Add instantiation lines
         for var_name, inst in self.instantiations.items():
             lines.append(f"{var_name} = {inst}")
 
-        # Add the pipeline construction. We don't import Pipeline here to avoid
-        # coupling; the import string should be present in `self.imports` if needed.
-        lines.append(f"\npipeline = Pipeline([\n\t{pipeline_body}\n])")
+        lines.append("")  # Blank line before pipeline construction
+
+        # Build the pipeline
+        pipeline_steps: List[str] = []
+
+        if transformers:
+            # Create ColumnTransformer for single-column transformers
+            ct_items = []
+            for name, var_name, columns in transformers:
+                cols_repr = repr(columns) if len(columns) > 1 else repr(columns[0]) if columns else "[]"
+                ct_items.append(f"('{name}', {var_name}, {cols_repr})")
+            
+            ct_body = ",\n\t\t".join(ct_items)
+            lines.append(f"preprocessor = ColumnTransformer([\n\t\t{ct_body}\n\t], remainder='passthrough')")
+            lines.append("")
+            pipeline_steps.append("('preprocessor', preprocessor)")
+
+        # Add manipulators to pipeline
+        for var_name in manipulators:
+            pipeline_steps.append(f"('{var_name}', {var_name})")
+
+        # Add model as final step
+        if model_step:
+            pipeline_steps.append(f"('{model_step}', {model_step})")
+
+        # Create final pipeline
+        if pipeline_steps:
+            pipeline_body = ",\n\t".join(pipeline_steps)
+            lines.append(f"pipeline = Pipeline([\n\t{pipeline_body}\n])")
+        else:
+            lines.append("pipeline = Pipeline([])")
 
         self.pipeline_definition = "\n".join(lines)
