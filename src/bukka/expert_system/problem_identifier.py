@@ -71,6 +71,7 @@ class ProblemIdentifier:
                     sol.null_solutions.mean_solution,
                     sol.null_solutions.median_solution,
                 ],
+                problem_type="transformer",
             )
             self.problems_to_solve.add_problem(problem)
 
@@ -85,6 +86,7 @@ class ProblemIdentifier:
                         sol.outlier_solutions.remove_outliers,
                         sol.outlier_solutions.cap_outliers,
                     ],
+                    problem_type="transformer",
                 )
                 self.problems_to_solve.add_problem(problem)
 
@@ -99,6 +101,7 @@ class ProblemIdentifier:
                         sol.categorical_solutions.standardize_categories,
                         sol.categorical_solutions.encode_categories,
                     ],
+                    problem_type="transformer",
                 )
                 self.problems_to_solve.add_problem(problem)
 
@@ -109,7 +112,8 @@ class ProblemIdentifier:
                 problem_name="Clustering",
                 description="Without a label, unsupervised clustering is needed.",
                 features=[],
-                solutions=[sol.clustering_solutions.clustering_analysis]
+                solutions=[sol.clustering_solutions.clustering_analysis],
+                problem_type="model",
             )
             return
         elif self.dataset.backend.type_of_column(self.target_column) in ["int", "float"]:
@@ -118,7 +122,8 @@ class ProblemIdentifier:
                     problem_name="Regression",
                     description="The target variable is continuous.",
                     features=[self.target_column],
-                    solutions=[sol.regression_solutions.regression_analysis]
+                    solutions=[sol.regression_solutions.regression_analysis],
+                    problem_type="model",
                 )
         
         # This means classification, as target is not None and not regression. Now let's see if it's binary or multi-class.
@@ -127,12 +132,14 @@ class ProblemIdentifier:
                 problem_name="Binary Classification",
                 description="The target variable has two distinct classes.",
                 features=[self.target_column],
-                solutions=[sol.classification_solutions.binary_classification]
+                solutions=[sol.classification_solutions.binary_classification],
+                problem_type="model",
             )
         else:
             self.ml_problem = Problem(
                 problem_name="Multi-class Classification",
                 description="The target variable has more than two distinct classes.",
                 features=[self.target_column],
-                solutions=[sol.classification_solutions.multi_class_classification]
+                solutions=[sol.classification_solutions.multi_class_classification],
+                problem_type="model",
             )
