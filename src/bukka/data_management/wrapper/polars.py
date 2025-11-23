@@ -167,21 +167,21 @@ class PolarsOperations:
             logger.debug(f"Processed {partition_count} strata")
 
             # Concatenate the split results back into final train and test DataFrames
-            train_df = pl.concat(train_results)
-            test_df = pl.concat(test_results)
-            logger.debug(f"Stratified split complete: train={train_df.height} rows, test={test_df.height} rows")
+            self.train_df = pl.concat(train_results)
+            self.test_df = pl.concat(test_results)
+            logger.debug(f"Stratified split complete: train={self.train_df.height} rows, test={self.test_df.height} rows")
 
         else:
             logger.debug("Performing non-stratified split")
             # Perform a simple, non-stratified split on the entire full DataFrame, with shuffling
-            train_df, test_df = self._split_dataset(self.full_df, train_size=train_size, seed=self._random_seed())
-            logger.debug(f"Non-stratified split complete: train={train_df.height} rows, test={test_df.height} rows")
+            self.train_df, self.test_df = self._split_dataset(self.full_df, train_size=train_size, seed=self._random_seed())
+            logger.debug(f"Non-stratified split complete: train={self.train_df.height} rows, test={self.test_df.height} rows")
 
         # Write the resulting DataFrames to disk as Parquet files
         logger.debug(f"Writing train dataset to: {train_path}")
-        self.write_parquet(train_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), self._fix_write_paths(train_path))
+        self.write_parquet(self.train_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), self._fix_write_paths(train_path))
         logger.debug(f"Writing test dataset to: {test_path}")
-        self.write_parquet(test_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), self._fix_write_paths(test_path))
+        self.write_parquet(self.test_df.sample(fraction=1.0, with_replacement=False, seed=self._random_seed()), self._fix_write_paths(test_path))
         logger.debug("Dataset split and save complete")
 
 
