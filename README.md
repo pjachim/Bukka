@@ -25,11 +25,11 @@ pip install bukka
 
 ### 2\. Creating a New Project
 
-Use the `bukka.bukka` command, similar to Django, followed by your desired project name.
+Use `bukka` command, similar to Django, followed by your desired project name.
 
 ```bash
 # Example: Create a new project named 'titanic'
-python -m bukka.bukka -n titanic -d titanic.csv
+python -m bukka -n titanic -d titanic.csv
 ```
 
 This command will:
@@ -39,14 +39,14 @@ This command will:
 3.  Generate the initial dependency file: `titanic/requirements.txt`
 4.  Install the packages in the requirements.txt.
 5.  Copy the data file to your data folder.
+6.  Split the dataset into a training and test set.
+7.  Provides a of reasonable pipelines based on an adhoc scan of your dataset.
 
 (Coming soon, the command will also do the following):
 
-6.  Provide a few baseline models you can compare to, e.g. using random guessing.
-7.  Provide a couple of reasonable pipelines based on an adhoc scan of your dataset.
-8.  Split your dataset into a train and test set. 
+8.  Provide a few baseline models you can compare to, e.g. using random guessing.
 9.  Provide placeholder utility classes you can customize for your project.
-10.  Initialize MLFlow to track your parameters and results.
+10. Initialize MLFlow to track your parameters and results.
 11. Provide starter notebooks, so you can get to machine learning ASAP.
 
 ## 🌳 Standard Project Structure
@@ -67,6 +67,14 @@ When you run `python -m bukka.bukka -n <name>`, the following standardized struc
 ├── scripts/                       # Python scripts for automation (currently empty)
 ├── requirements.txt               # Project dependencies file
 ```
+
+-----
+
+## 🎶 About the Name
+
+The library is named after Bukka White, a country blues guitarist whorecorded from the late 30s and 40s, before being rediscovered in the 60s. One of my favorites by him is *Fixin' to Die Blues*. Country blues guitarists use their technical skill with the guitar to back their singing to create a very complete sound, using their thumb to play rhythym and their fingers to play a melodyand harmonize over that giving it the sound of multiple guitarists.
+
+The choice to name the library after a guitarist is inspired, like much of the rest of this project, by the library Django, named for Django Reinhardt, another phenomenal guitarist.
 
 -----
 
