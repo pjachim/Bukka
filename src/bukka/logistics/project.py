@@ -8,6 +8,7 @@ from bukka.data_management.dataset import Dataset
 from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
+from bukka.coding.write_starter_notebook import StarterNotebookWriter
 from bukka.utils.bukka_logger import BukkaLogger
 
 logger = BukkaLogger(__name__)
@@ -60,6 +61,7 @@ class Project:
             logger.info("Dataset path provided, generating pipeline")
             self._write_pipeline(target_column=self.target_column)
             self._write_data_reader_class()
+            self._write_starter_notebook()
         else:
             logger.debug("No dataset path provided, skipping pipeline generation")
         
@@ -207,3 +209,17 @@ class Project:
         logger.info("Building project environment (virtualenv and dependencies)")
         self.environ_manager.build_environment()
         logger.info("Environment setup complete")
+
+    def _write_starter_notebook(self) -> None:
+        """
+        Generate and write a starter Jupyter notebook for the project.
+
+        This method creates a Jupyter notebook with pre-defined cells
+        to help users get started with their Bukka project.
+        """
+        starter_notebook_writer = StarterNotebookWriter(
+            output_path=str(self.file_manager.starter_notebook_path)
+        )
+
+        logger.info("Writing starter notebook")
+        starter_notebook_writer.write_notebook()
