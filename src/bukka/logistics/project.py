@@ -7,6 +7,7 @@ from bukka.logistics.environment.environment import EnvironmentBuilder
 from bukka.data_management.dataset import Dataset
 from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.coding.write_pipeline import PipelineWriter
+from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.utils.bukka_logger import BukkaLogger
 
 logger = BukkaLogger(__name__)
@@ -57,13 +58,14 @@ class Project:
 
         if self.dataset_path:
             logger.info("Dataset path provided, generating pipeline")
-            self.write_pipeline(target_column=self.target_column)
+            self._write_pipeline(target_column=self.target_column)
+            self._write_data_reader_class()
         else:
             logger.debug("No dataset path provided, skipping pipeline generation")
         
         logger.info(f"Project setup complete for '{self.name}'", format_level='h4')
 
-    def write_pipeline(
+    def _write_pipeline(
             self,
             target_column: str,
             dataframe_backend: str = "polars",
@@ -156,6 +158,17 @@ class Project:
         logger.info("Pipeline generation complete", format_level='h4')
 
         return str(dest.resolve())
+    
+    def _write_data_reader_class(self) -> None:
+        """Generate and write a data reader class to the project.
+
+        This method creates a data reader class that encapsulates
+        the logic for loading the dataset, using the project's  `FileManager`.
+        The generated class is saved to the project's data readers folder.  
+        """
+        writer = DataReaderWriter(self.file_manager)
+        writer.write_class()
+        logger.info("Data reader class generation complete", format_level='h4')
 
     def _build_skeleton(self) -> None:
         """
