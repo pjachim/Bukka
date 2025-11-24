@@ -1,0 +1,47 @@
+from bukka.coding.utils.jupyter_handler import JupyterWriter
+
+class StarterNotebookWriter:
+    """
+    Generates and writes a starter Jupyter notebook for a Bukka project.
+
+    This class constructs a Python source file containing a Jupyter notebook
+    with pre-defined cells to help users get started with their Bukka project.
+
+    Parameters
+    ----------
+    output_path : str
+        The file path where the notebook will be written.
+
+    Examples
+    --------
+    >>> writer = StarterNotebookWriter(output_path="starter_notebook.ipynb")
+    >>> writer.write_notebook()  # Writes the starter notebook to file
+    """
+    def __init__(self, output_path: str) -> None:
+        self.output_path = output_path
+
+    def write_notebook(self) -> None:
+        """
+        Write the starter Jupyter notebook to the configured output path.
+        """
+        with JupyterWriter(self.output_path) as notebook_writer:
+            notebook_writer.add_cell(
+                cell_content="# Welcome to Your Bukka Project\n\nThis notebook will help you get started with your Bukka project.",
+                cell_type="markdown"
+            )
+
+            notebook_writer.add_cell(
+                cell_content="## Data Loading\n\nThe following code snippet demonstrates how to load your training and testing data using the `DataReader` class provided by Bukka.",
+                cell_type="markdown"
+            )
+            notebook_writer.add_cell(
+                cell_content=(
+                    "# Import necessary libraries\n"
+                    "import pandas as pd\n"
+                    "from utils.data_reader import DataReader\n\n"
+                    "# Load your data\n"
+                    "data_reader = DataReader()\ntrain_data = data_reader.read_train_data()\ntest_data = data_reader.read_test_data()\n\n"
+                    "# Display the first few rows of the training data\ntrain_data.head()"
+                ),
+                cell_type="code"
+            )
