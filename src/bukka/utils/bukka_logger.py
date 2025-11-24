@@ -1,11 +1,7 @@
 import logging
 import math
 from typing import Optional, Any
-# The initial setup for the root logger is kept as is.
-# This ensures a default handler is present unless configured otherwise.
-logging.basicConfig(level=logging.INFO)
-# Get a logger instance for the module itself, though it's not used in the class logic.
-logger = logging.getLogger(__name__)
+from bukka.config import LOG_LEVEL
 
 # Define constants for better maintainability and readability
 DEFAULT_FORMAT_LEVEL: str = 'p'
@@ -29,7 +25,7 @@ class BukkaLogger:
     logger : logging.Logger
         The underlying standard library logger instance.
     """
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, log_level: int = LOG_LEVEL) -> None:
         """
         Initializes the BukkaLogger.
 
@@ -41,6 +37,18 @@ class BukkaLogger:
         """
         # Get a specific logger instance with the given name
         self.logger: logging.Logger = logging.getLogger(name)
+        self.logger.setLevel(log_level)
+        
+        # Add console handler if not already present
+        if not self.logger.handlers:
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(log_level)
+            
+            # Create a simple formatter
+            formatter = logging.Formatter('%(levelname)s - %(name)s - %(message)s')
+            console_handler.setFormatter(formatter)
+            
+            self.logger.addHandler(console_handler)
 
     def debug(self, msg: Any, format_level: str = DEFAULT_FORMAT_LEVEL) -> None:
         """
@@ -184,5 +192,5 @@ class BukkaLogger:
         
         # Default case for unknown format levels: treat as plain 'p'
         else:
-            logger.warning(f"Unknown format level '{format_level}'. Defaulting to 'p'.")
+            self.logger.warning(f"Unknown format level '{format_level}'. Defaulting to 'p'.")
             return msg

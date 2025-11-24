@@ -4,4 +4,5 @@ polars
 pandas
 seaborn
 numpy
+ipykernel
 '''
