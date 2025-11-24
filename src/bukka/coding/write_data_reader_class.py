@@ -1,4 +1,4 @@
-from bukka.logistics.files.file_manager import FileHandler
+from bukka.logistics.files.file_manager import FileManager
 
 class_template = '''
 import polars as pl
@@ -52,23 +52,23 @@ class DataReaderWriter:
     >>> writer = DataReaderWriter(file_handler)
     >>> writer.write_class()  # Writes DataReader class to file
     """
-    def __init__(self, file_handler: FileHandler) -> None:
-        self.file_handler = file_handler
+    def __init__(self, file_manager: FileManager) -> None:
+        self.file_manager = file_manager
 
     def write_class(self) -> None:
         """
         Write the DataReader class to the configured output path.
 
         Generates Python source code from the template and writes it to
-        the file specified by `file_handler.data_reader_path`.
+        the file specified by `file_manager.data_reader_path`.
 
         Examples
         --------
-        >>> writer = DataReaderWriter(file_handler)
+        >>> writer = DataReaderWriter(file_manager)
         >>> writer.write_class()
         """
         class_code = self._fill_template()
-        with open(self.file_handler.data_reader_path, 'w') as file:
+        with open(self.file_manager.data_reader_path, 'w') as file:
             file.write(class_code)
 
     def _fill_template(self) -> str:
@@ -82,13 +82,13 @@ class DataReaderWriter:
 
         Examples
         --------
-        >>> writer = DataReaderWriter(file_handler)
+        >>> writer = DataReaderWriter(file_manager)
         >>> code = writer._fill_template()
         >>> assert "train_filepath" in code
         """
         filled_template = class_template.strip()
         filled_template = filled_template.format(
-            train_filepath=repr(str(self.file_handler.train_data_path)),
-            test_filepath=repr(str(self.file_handler.test_data_path))
+            train_filepath=repr(str(self.file_manager.train_data_file)),
+            test_filepath=repr(str(self.file_manager.test_data_file))
         )
         return filled_template
