@@ -40,7 +40,7 @@ This command will:
 4.  Install the packages in the requirements.txt.
 5.  Copy the data file to your data folder.
 6.  Split the dataset into a training and test set.
-7.  Provides a of reasonable pipelines based on an adhoc scan of your dataset.
+7.  Provides a reasonable pipelines based on an adhoc scan of your dataset.
 
 (Coming soon, the command will also do the following):
 
