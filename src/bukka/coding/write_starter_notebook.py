@@ -38,7 +38,7 @@ class StarterNotebookWriter:
                 cell_content=(
                     "# Import necessary libraries\n"
                     "import pandas as pd\n"
-                    "from bukka.coding import DataReader\n\n"
+                    "from utils.data_reader import DataReader\n\n"
                     "# Load your data\n"
                     "data_reader = DataReader()\ntrain_data = data_reader.read_train_data()\ntest_data = data_reader.read_test_data()\n\n"
                     "# Display the first few rows of the training data\ntrain_data.head()"
