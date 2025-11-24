@@ -1,4 +1,4 @@
-# This workflow will upload a Python Package to PyPI when a release is created
+# This workflow will upload a Python Package to PyPI when code is merged into main
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
 
 # This workflow uses actions that are not certified by GitHub.
@@ -9,8 +9,9 @@
 name: Upload Python Package
 
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - main # Trigger on push to the 'main' branch
 
 permissions:
   contents: read
@@ -26,18 +27,34 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Build release distributions
+      - name: Install dependencies and Build release distributions
         run: |
-          # NOTE: put your own distribution build steps here.
-          python -m pip install build
+          python -m pip install build poetry # Assuming you use poetry or setuptools for pyproject.toml
           python -m build
+
+      - name: Get package version from pyproject.toml
+        id: get_version
+        run: |
+          # A simple way to extract the version number from pyproject.toml
+          VERSION=$(grep -m 1 -oP 'version\s*=\s*"\K[^"]+' pyproject.toml)
+          echo "package_version=$VERSION" >> $GITHUB_OUTPUT
+        # Add a conditional step to ensure `pyproject.toml` exists and contains a version
+        # to prevent job failure if the file is missing or malformed.
+        # This assumes your `pyproject.toml` has a line like: `version = "1.2.3"`
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
         with:
           name: release-dists
           path: dist/
-
+          
+      - name: Upload Version
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-version
+          path: .
+          if-no-files-found: error
+          
   pypi-publish:
     runs-on: ubuntu-latest
     needs:
@@ -50,14 +67,16 @@ jobs:
     # For more information, see: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules
     environment:
       name: pypi
-      # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
-      url: https://pypi.org/project/bukka/
-      #
-      # ALTERNATIVE: if your GitHub Release name is the PyPI project version string
-      # ALTERNATIVE: exactly, uncomment the following line instead:
-      # url: https://pypi.org/project/YOURPROJECT/${{ github.event.release.name }}
+      # Update URL to include the project and version for 'Bukka'
+      url: https://pypi.org/project/bukka/${{ needs.release-build.outputs.package_version }}
 
     steps:
+      - name: Download package version
+        uses: actions/download-artifact@v4
+        with:
+          name: package-version
+          path: .
+          
       - name: Retrieve release distributions
         uses: actions/download-artifact@v4
         with:
