@@ -23,10 +23,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["pipelines*", "utils*"]
-
-# Bukka project metadata
-[tool.bukka]
-target_column = "{target_column}"
 '''
 
 
@@ -74,8 +70,7 @@ class PyprojectTomlWriter(TemplateBaseClass):
     def __init__(
         self,
         file_manager: FileManager,
-        project_name: str = "bukka_project",
-        target_column: str = "target"
+        project_name: str = "bukka_project"
     ) -> None:
         """
         Initialize the PyprojectTomlWriter with file manager and configuration.
@@ -86,8 +81,6 @@ class PyprojectTomlWriter(TemplateBaseClass):
             The FileManager instance containing all project paths.
         project_name : str, optional
             The name of the project. Default is "bukka_project".
-        target_column : str, optional
-            The name of the target column for ML tasks. Default is "target".
         
         Examples
         --------
@@ -99,11 +92,10 @@ class PyprojectTomlWriter(TemplateBaseClass):
         # Build kwargs dictionary with all template values
         kwargs: dict[str, Any] = {
             "project_name": project_name,
-            "target_column": target_column,
             "requirements_file": file_manager.requirements_path.name
         }
         
-        expected_args = ["project_name", "target_column", "requirements_file"]
+        expected_args = ["project_name", "requirements_file"]
         
         # Initialize parent class with template and paths
         super().__init__(
