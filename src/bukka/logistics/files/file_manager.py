@@ -114,6 +114,7 @@ class FileManager:
         self.requirements_path: Path = self.project_path / 'requirements.txt'
         self.readme_path: Path = self.project_path / 'README.md'
         self.gitignore_path: Path = self.project_path / '.gitignore'
+        self.pyproject_toml_path: Path = self.project_path / 'pyproject.toml'
 
     def _make_path(self, path: Path) -> None:
         """
