@@ -99,11 +99,6 @@ class Project:
         logger.info("Starting pipeline generation", format_level='h4')
         logger.debug(f"Target column: {target_column}")
         logger.debug(f"Dataframe backend: {dataframe_backend}")
-        
-        if self.file_manager is None:
-            logger.debug("FileManager not initialized, building skeleton")
-            # Ensure skeleton exists and dataset is copied
-            self._build_skeleton()
 
         logger.info("Creating Dataset instance")
         dataset = Dataset(
@@ -117,8 +112,6 @@ class Project:
         
         logger.info("Initializing ProblemIdentifier")
         identifier = ProblemIdentifier(dataset, target_column)
-        
-        logger.info("Identifying problems in dataset")
         identifier.identify_problems()
         logger.debug(f"Identified {len(identifier.problems_to_solve.problems)} problems to solve")
 
