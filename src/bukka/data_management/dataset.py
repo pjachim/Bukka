@@ -4,7 +4,17 @@ from bukka.utils.bukka_logger import BukkaLogger
 
 logger = BukkaLogger(__name__)
 
-class Dataset:
+# Class to handle stats
+class DatasetStatistics:
+    def backend(self):
+        import bukka.data_management.wrapper.polars as polars_wrapper
+        return polars_wrapper.PolarsOperations()
+
+    def identify_multicollinearity(self):
+        # Placeholder for multicollinearity identification logic
+        raise NotImplementedError("Multicollinearity identification not implemented.")
+
+class Dataset(DatasetStatistics):
     """
     Dataset class for managing and splitting datasets for expert systems.
     Args:
