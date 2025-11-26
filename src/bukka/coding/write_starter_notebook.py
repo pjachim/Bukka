@@ -45,3 +45,44 @@ class StarterNotebookWriter:
                 ),
                 cell_type="code"
             )
+
+            notebook_writer.add_cell(
+                cell_content="## Running a Pipeline\n\nBukka generates ML pipelines in the `pipelines/generated/` directory. You can import and run these pipelines to train and evaluate your models.",
+                cell_type="markdown"
+            )
+
+            notebook_writer.add_cell(
+                cell_content=(
+                    "# Import the generated pipeline\n"
+                    "# Replace 'pipeline_TIMESTAMP' with your actual pipeline filename\n"
+                    "from pipelines.generated.pipeline_TIMESTAMP import get_pipeline\n\n"
+                    "# Get the pipeline instance\n"
+                    "pipeline = get_pipeline()\n\n"
+                    "# Fit the pipeline on training data\n"
+                    "pipeline.fit(train_data.drop(columns=['target']), train_data['target'])\n\n"
+                    "# Make predictions on test data\n"
+                    "predictions = pipeline.predict(test_data.drop(columns=['target']))\n\n"
+                    "# Display predictions\n"
+                    "print(predictions[:10])"
+                ),
+                cell_type="code"
+            )
+
+            notebook_writer.add_cell(
+                cell_content="## Model Evaluation\n\nEvaluate your model's performance using appropriate metrics.",
+                cell_type="markdown"
+            )
+
+            notebook_writer.add_cell(
+                cell_content=(
+                    "# Import evaluation metrics\n"
+                    "from sklearn.metrics import accuracy_score, classification_report\n\n"
+                    "# Calculate accuracy (adjust metric based on your problem type)\n"
+                    "accuracy = accuracy_score(test_data['target'], predictions)\n"
+                    "print(f'Accuracy: {accuracy:.4f}')\n\n"
+                    "# Display detailed classification report\n"
+                    "print('\\nClassification Report:')\n"
+                    "print(classification_report(test_data['target'], predictions))"
+                ),
+                cell_type="code"
+            )
