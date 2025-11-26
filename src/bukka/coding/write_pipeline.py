@@ -1,8 +1,5 @@
 from typing import Any, List, Set, Tuple, Dict
 from bukka.expert_system.problem_identifier import ProblemIdentifier
-import random
-from bukka.expert_system.solution import Solution
-
 
 class PipelineWriter:
     """Build a pipeline plan from identified problems and chosen solutions.
@@ -19,7 +16,7 @@ class PipelineWriter:
     checks to extract import strings, instantiation text and step names.
     """
 
-    def __init__(self, problem_identifier: ProblemIdentifier) -> None:
+    def __init__(self, pipeline_steps: List[Tuple[Any, Any]]) -> None:
         """Create a `PipelineWriter`.
 
         Args:
@@ -27,19 +24,9 @@ class PipelineWriter:
                 exposes `problems_to_solve` and `ml_problem` with
                 candidate `solutions`.
         """
-        self.problem_identifier = problem_identifier
-        # Prefer random ordering for the ml_problem solutions so pop() is non-deterministic
-        if hasattr(self.problem_identifier, 'ml_problem') and self.problem_identifier.ml_problem is not None:
-            try:
-                solutions = getattr(self.problem_identifier.ml_problem, 'solutions', [])
-                if solutions:
-                    random.shuffle(solutions)
-            except Exception:
-                # If ml_problem.solutions is not shufflable, ignore
-                pass
+        self.pipeline_steps = pipeline_steps
 
         # Public results filled by `write()`
-        self.pipeline_steps: List[Any] = []
         self.imports: Set[str] = set()
         self.instantiations: Dict[str, str] = {}
         self.pipeline_definition: str = ""
@@ -54,50 +41,10 @@ class PipelineWriter:
             a list of selected solution objects (shape depends on project
             conventions). `imports` is a set of import statement strings.
         """
-        self._arrange_pipeline()
         self._fetch_step_definitions()
         self._fetch_imports()
         self._define_sklearn_pipeline()
         return self.pipeline_steps, self.imports
-
-    def _arrange_pipeline(self) -> None:
-        """Select processors for each identified problem and the ML step.
-
-        The selected items are stored in `self.pipeline_steps` as tuples
-        of (solution, problem) to preserve problem metadata.
-        """
-        self.pipeline_steps: list[tuple[Solution, Any]] = []
-        # Select one processor per problem (if any)
-        self.pipeline_steps += self._processor_selection()
-
-        # Append the ML solution (if available). Use pop() to follow the
-        # original intention of selecting one solution from the shuffled list.
-        if hasattr(self.problem_identifier, 'ml_problem') and self.problem_identifier.ml_problem is not None:
-            try:
-                ml_solutions = getattr(self.problem_identifier.ml_problem, "solutions", [])
-                if ml_solutions:
-                    self.pipeline_steps.append((ml_solutions.pop(), self.problem_identifier.ml_problem))
-            except Exception as e:
-                # Log but don't crash if ml_problem is malformed
-                pass
-
-    def _processor_selection(self) -> list[tuple[Solution, Any]]:
-        """Choose one solution per problem.
-
-        Returns a list of (solution, problem) tuples to preserve problem
-        metadata like features and problem_type.
-        """
-        chosen: list[tuple[Solution, Any]] = []
-        problems = getattr(self.problem_identifier.problems_to_solve, "problems", [])
-        for p in problems:
-            try:
-                sol_list = getattr(p, "solutions", [])
-                if sol_list:
-                    chosen.append((random.choice(sol_list), p))
-            except Exception:
-                # Skip problematic entries rather than crash
-                continue
-        return chosen
 
     def _fetch_imports(self) -> None:
         """Populate `self.imports` from the selected pipeline steps."""
