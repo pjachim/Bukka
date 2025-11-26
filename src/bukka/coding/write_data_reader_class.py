@@ -30,6 +30,25 @@ class DataReader:
     def _read_file(self, filepath: str):
         """Reads a Parquet file and returns a Polars DataFrame."""
         return pl.read_parquet(filepath)
+
+    def readXy_train(self, target_column: str | None = {target_column}) -> tuple[pl.DataFrame, pl.DataFrame]:
+        """Reads the training data and splits it into features and target."""
+        return self._readXy(self.train_filepath, target_column, is_train=True)
+
+    def readXy_test(self, target_column: str | None = {target_column}) -> tuple[pl.DataFrame, pl.DataFrame]:
+        """Reads the testing data and splits it into features and target."""
+        return self._readXy(self.test_filepath, target_column, is_train=False)
+
+    def _readXy(self, filepath: str, target_column: str | None = {target_column}, is_train: bool) -> tuple[pl.DataFrame, pl.DataFrame]:
+        """Reads a Parquet file and splits it into features and target."""
+        if is_train:
+            df = self.read_train_data()
+        else:
+            df = self.read_test_data()
+
+        X = df.drop([target_column])
+        y = df.select(pl.col(target_column))
+        return X, y
 '''
 
 

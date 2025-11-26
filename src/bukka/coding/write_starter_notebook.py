@@ -52,8 +52,10 @@ class StarterNotebookWriter:
                     "import pandas as pd\n"
                     "from utils.data_reader import DataReader\n\n"
                     "# Load your data\n"
-                    "data_reader = DataReader()\ntrain_data = data_reader.read_train_data()\ntest_data = data_reader.read_test_data()\n\n"
-                    "# Display the first few rows of the training data\ntrain_data.head()"
+                    "data_reader = DataReader()\n"
+                    "X_train, y_train = data_reader.readXy_train()\n"
+                    "X_test, y_test = data_reader.readXy_test()\n\n"
+                    "# Display the first few rows of the training data\nX_train.head()"
                 ),
                 cell_type="code"
             )
@@ -67,13 +69,11 @@ class StarterNotebookWriter:
                 cell_content=(
                     "# Import the generated pipeline\n"
                     "# Replace 'pipeline_TIMESTAMP' with your actual pipeline filename\n"
-                    "from pipelines.generated.pipeline_TIMESTAMP import get_pipeline\n\n"
-                    "# Get the pipeline instance\n"
-                    "pipeline = get_pipeline()\n\n"
+                    "from pipelines.generated.pipeline_TIMESTAMP import pipeline\n\n"
                     "# Fit the pipeline on training data\n"
-                    "pipeline.fit(train_data.drop(columns=['target']), train_data['target'])\n\n"
+                    "pipeline.fit(X_train, y_train)\n\n"
                     "# Make predictions on test data\n"
-                    "predictions = pipeline.predict(test_data.drop(columns=['target']))\n\n"
+                    "predictions = pipeline.predict(X_test)\n\n"
                     "# Display predictions\n"
                     "print(predictions[:10])"
                 ),
@@ -90,11 +90,11 @@ class StarterNotebookWriter:
                     "# Import evaluation metrics\n"
                     "from sklearn.metrics import accuracy_score, classification_report\n\n"
                     "# Calculate accuracy (adjust metric based on your problem type)\n"
-                    "accuracy = accuracy_score(test_data['target'], predictions)\n"
+                    "accuracy = accuracy_score(y_test, predictions)\n"
                     "print(f'Accuracy: {accuracy:.4f}')\n\n"
                     "# Display detailed classification report\n"
                     "print('\\nClassification Report:')\n"
-                    "print(classification_report(test_data['target'], predictions))"
+                    "print(classification_report(y_test, predictions))"
                 ),
                 cell_type="code"
             )
