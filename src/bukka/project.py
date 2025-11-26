@@ -118,24 +118,9 @@ class Project:
         logger.info("Initializing ProblemIdentifier")
         identifier = ProblemIdentifier(dataset, target_column)
         
-        # Run detection phases
-        logger.info("Running multivariate problem detection")
-        identifier.multivariate_problems()
-        logger.debug("Multivariate problem detection complete")
-        
-        logger.info("Running univariate problem detection")
-        identifier.univariate_problems()
-        logger.debug("Univariate problem detection complete")
-        
-        # identify ml problem (may be clustering/regression/classification)
-        logger.info("Identifying ML problem type")
-        try:
-            identifier._identify_ml_problem()
-            logger.debug("ML problem identification complete")
-        except Exception as e:
-            logger.warn(f"Failed to identify ML problem: {e}")
-            # If private method naming changes, ignore to avoid crashing here
-            pass
+        logger.info("Identifying problems in dataset")
+        identifier.identify_problems()
+        logger.debug(f"Identified {len(identifier.problems_to_solve.problems)} problems to solve")
 
         # Generate pipeline
         logger.info("Generating pipeline code")
