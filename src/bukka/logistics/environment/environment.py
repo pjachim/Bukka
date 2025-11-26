@@ -1,5 +1,4 @@
 import venv
-import os
 import subprocess
 from bukka.logistics.files.file_manager import FileManager
 from bukka.utils.reference import requirements
@@ -33,6 +32,18 @@ class EnvironmentBuilder:
             'install',
             '-r',
             str(self.file_manager.requirements_path)
+        ]
+
+        subprocess.run(cmd_list)
+
+    def _install_package_editable(self):
+        cmd_list = [
+            str(self.file_manager.python_path),
+            '-m',
+            'pip',
+            'install',
+            '-e',
+            str(self.file_manager.project_path)
         ]
 
         subprocess.run(cmd_list)
