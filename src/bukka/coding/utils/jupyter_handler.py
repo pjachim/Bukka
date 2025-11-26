@@ -1,9 +1,11 @@
 import json
+from pathlib import Path
 
 class JupyterWriter:
-    def __init__(self, filename: str) -> None:
+    def __init__(self, filename: str, venv_path: str | Path | None = None) -> None:
         self.cells: list[dict[str, None | str | list[str]]] = []
         self.filename = filename
+        self.venv_path = Path(venv_path) if venv_path else None
 
     def add_cell(self, cell_content: str, cell_type: str = "code") -> None:
         '''
@@ -32,18 +34,37 @@ class JupyterWriter:
         }
 
     def _format_notebook(self) -> dict:
+        metadata = {
+            "kernelspec": {
+                "name": "python3",
+                "display_name": "Python 3"
+            },
+            "language_info": {
+                "name": "python",
+                "version": "3.x"
+            }
+        }
+        
+        # If venv_path is provided, add Python interpreter path to metadata
+        if self.venv_path:
+            import sys
+            if sys.platform == 'win32':
+                python_path = self.venv_path / "Scripts" / "python.exe"
+            else:
+                python_path = self.venv_path / "bin" / "python"
+            
+            # Only add if the Python executable exists
+            if python_path.exists():
+                metadata["vscode"] = {
+                    "interpreter": {
+                        "hash": str(hash(str(python_path.resolve()))),
+                    }
+                }
+                metadata["language_info"]["path"] = str(python_path.resolve())
+        
         notebook_content = {
             "cells": self.cells,
-            "metadata": {
-                "kernelspec": {
-                    "name": "python3",
-                    "display_name": "Python 3"
-                },
-                "language_info": {
-                    "name": "python",
-                    "version": "3.x"
-                }
-            },
+            "metadata": metadata,
             "nbformat": 4,
             "nbformat_minor": 2
         }

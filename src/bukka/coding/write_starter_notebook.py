@@ -1,3 +1,4 @@
+from pathlib import Path
 from bukka.coding.utils.jupyter_handler import JupyterWriter
 
 class StarterNotebookWriter:
@@ -11,20 +12,31 @@ class StarterNotebookWriter:
     ----------
     output_path : str
         The file path where the notebook will be written.
+    venv_path : str | Path | None, optional
+        The path to the virtual environment. If provided, the notebook will be
+        configured to use the Python interpreter from this environment.
 
     Examples
     --------
     >>> writer = StarterNotebookWriter(output_path="starter_notebook.ipynb")
     >>> writer.write_notebook()  # Writes the starter notebook to file
+    >>> 
+    >>> # With virtual environment
+    >>> writer = StarterNotebookWriter(
+    ...     output_path="starter_notebook.ipynb",
+    ...     venv_path=".venv"
+    ... )
+    >>> writer.write_notebook()  # Writes notebook configured for the venv
     """
-    def __init__(self, output_path: str) -> None:
+    def __init__(self, output_path: str, venv_path: str | Path | None = None) -> None:
         self.output_path = output_path
+        self.venv_path = venv_path
 
     def write_notebook(self) -> None:
         """
         Write the starter Jupyter notebook to the configured output path.
         """
-        with JupyterWriter(self.output_path) as notebook_writer:
+        with JupyterWriter(self.output_path, venv_path=self.venv_path) as notebook_writer:
             notebook_writer.add_cell(
                 cell_content="# Welcome to Your Bukka Project\n\nThis notebook will help you get started with your Bukka project.",
                 cell_type="markdown"

@@ -215,10 +215,15 @@ class Project:
         Generate and write a starter Jupyter notebook for the project.
 
         This method creates a Jupyter notebook with pre-defined cells
-        to help users get started with their Bukka project.
+        to help users get started with their Bukka project. If a virtual
+        environment was created, the notebook will be configured to use it.
         """
+        # Pass venv path if environment was set up
+        venv_path = None if self.skip_venv else self.file_manager.virtual_env
+        
         starter_notebook_writer = StarterNotebookWriter(
-            output_path=str(self.file_manager.starter_notebook_path)
+            output_path=str(self.file_manager.starter_notebook_path),
+            venv_path=venv_path
         )
 
         logger.info("Writing starter notebook")

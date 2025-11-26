@@ -87,8 +87,11 @@ class DataReaderWriter:
         >>> assert "train_filepath" in code
         """
         filled_template = class_template.strip()
+        # Use relative paths from project root
+        train_rel = self.file_manager.train_data_file.relative_to(self.file_manager.project_path)
+        test_rel = self.file_manager.test_data_file.relative_to(self.file_manager.project_path)
         filled_template = filled_template.format(
-            train_filepath=repr(str(self.file_manager.train_data_file)),
-            test_filepath=repr(str(self.file_manager.test_data_file))
+            train_filepath=repr(str(train_rel).replace('\\', '/')),
+            test_filepath=repr(str(test_rel).replace('\\', '/'))
         )
         return filled_template
