@@ -98,12 +98,6 @@ class DataReaderWriter:
         -------
         str
             Python source code for the DataReader class with paths substituted.
-
-        Examples
-        --------
-        >>> writer = DataReaderWriter(file_manager)
-        >>> code = writer._fill_template()
-        >>> assert "train_filepath" in code
         """
         filled_template = class_template.strip()
         # Use relative paths from project root
