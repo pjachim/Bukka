@@ -99,8 +99,9 @@ class FileManager:
 
         # Other top-level paths
         self.virtual_env: Path = self.project_path / '.venv'
-        # Scripts path (treated as a Python package)
-        self.scripts: Path = self.project_path / 'scripts'
+        # Utils path (treated as a Python package)
+        self.utils: Path = self.project_path / 'utils'
+        self.data_reader_path: Path = self.utils / 'data_reader.py'
 
         # Determine the final dataset path within the 'data' directory.
         # It uses the original file's name.
@@ -113,6 +114,7 @@ class FileManager:
         self.requirements_path: Path = self.project_path / 'requirements.txt'
         self.readme_path: Path = self.project_path / 'README.md'
         self.gitignore_path: Path = self.project_path / '.gitignore'
+        self.pyproject_toml_path: Path = self.project_path / 'pyproject.toml'
 
     def _make_path(self, path: Path) -> None:
         """
@@ -159,12 +161,12 @@ class FileManager:
         # Create __init__.py to make 'candidate' a subpackage
         (self.candidate_pipes / '__init__.py').touch()
 
-        # --- 3. Create Other Directories (Virtual Env and Scripts) ---
+        # --- 3. Create Other Directories (Virtual Env and Utils) ---
         self._make_path(self.virtual_env)
 
-        self._make_path(self.scripts)
-        # Create __init__.py to make 'scripts' a package
-        (self.scripts / '__init__.py').touch()
+        self._make_path(self.utils)
+        # Create __init__.py to make 'utils' a package
+        (self.utils / '__init__.py').touch()
 
         # --- 4. Copy Dataset ---
         # The copy2 function is used as it attempts to preserve metadata (like timestamps).

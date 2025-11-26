@@ -7,6 +7,9 @@ from bukka.logistics.environment.environment import EnvironmentBuilder
 from bukka.data_management.dataset import Dataset
 from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.coding.write_pipeline import PipelineWriter
+from bukka.coding.write_data_reader_class import DataReaderWriter
+from bukka.coding.write_starter_notebook import StarterNotebookWriter
+from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
 from bukka.utils.bukka_logger import BukkaLogger
 
 logger = BukkaLogger(__name__)
@@ -51,19 +54,22 @@ class Project:
         
         if not self.skip_venv:
             logger.info("Setting up project environment")
+            self._write_toml()
             self._setup_environment()
         else:
             logger.info("Skipping environment setup as per configuration")
 
         if self.dataset_path:
             logger.info("Dataset path provided, generating pipeline")
-            self.write_pipeline(target_column=self.target_column)
+            self._write_pipeline(target_column=self.target_column)
+            self._write_data_reader_class()
+            self._write_starter_notebook()
         else:
             logger.debug("No dataset path provided, skipping pipeline generation")
         
         logger.info(f"Project setup complete for '{self.name}'", format_level='h4')
 
-    def write_pipeline(
+    def _write_pipeline(
             self,
             target_column: str,
             dataframe_backend: str = "polars",
@@ -156,6 +162,17 @@ class Project:
         logger.info("Pipeline generation complete", format_level='h4')
 
         return str(dest.resolve())
+    
+    def _write_data_reader_class(self) -> None:
+        """Generate and write a data reader class to the project.
+
+        This method creates a data reader class that encapsulates
+        the logic for loading the dataset, using the project's  `FileManager`.
+        The generated class is saved to the project's data readers folder.  
+        """
+        writer = DataReaderWriter(self.file_manager)
+        writer.write_class()
+        logger.info("Data reader class generation complete", format_level='h4')
 
     def _build_skeleton(self) -> None:
         """
@@ -194,3 +211,40 @@ class Project:
         logger.info("Building project environment (virtualenv and dependencies)")
         self.environ_manager.build_environment()
         logger.info("Environment setup complete")
+
+    def _write_starter_notebook(self) -> None:
+        """
+        Generate and write a starter Jupyter notebook for the project.
+
+        This method creates a Jupyter notebook with pre-defined cells
+        to help users get started with their Bukka project. If a virtual
+        environment was created, the notebook will be configured to use it.
+        """
+        # Pass venv path if environment was set up
+        venv_path = None if self.skip_venv else self.file_manager.virtual_env
+        
+        starter_notebook_writer = StarterNotebookWriter(
+            output_path=str(self.file_manager.starter_notebook_path),
+            venv_path=venv_path
+        )
+
+        logger.info("Writing starter notebook")
+        starter_notebook_writer.write_notebook()
+
+    def _write_toml(self) -> None:
+        """
+        Write a pyproject.toml file for the project.
+
+        This method creates a pyproject.toml file with basic project
+        metadata and configuration.
+        """
+        toml_path = self.file_manager.pyproject_toml_path
+
+        logger.info(f"Writing pyproject.toml to: {toml_path}")
+        writer = PyprojectTomlWriter(
+            file_manager=self.file_manager,
+            project_name=self.name
+        )
+
+        writer.write_class()
+        logger.info(f"pyproject.toml written to: {toml_path}")
