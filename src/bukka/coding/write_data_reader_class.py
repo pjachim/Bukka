@@ -31,6 +31,10 @@ class DataReader:
         """Reads a Parquet file and returns a Polars DataFrame."""
         return pl.read_parquet(filepath)
 
+'''
+
+# These methods are added only if a target column is specified (no need for X/y split for unsupervised tasks)
+additional_supervised_methods = '''
     def readXy_train(self, target_column: str | None = {target_column}) -> tuple[pl.DataFrame, pl.DataFrame]:
         """Reads the training data and splits it into features and target."""
         return self._readXy(self.train_filepath, target_column, is_train=True)
@@ -51,7 +55,6 @@ class DataReader:
         return X, y
 '''
 
-
 class DataReaderWriter:
     """
     Generates and writes a DataReader class for loading train/test parquet files.
@@ -71,8 +74,9 @@ class DataReaderWriter:
     >>> writer = DataReaderWriter(file_handler)
     >>> writer.write_class()  # Writes DataReader class to file
     """
-    def __init__(self, file_manager: FileManager) -> None:
+    def __init__(self, file_manager: FileManager, target_column: str | None = None) -> None:
         self.file_manager = file_manager
+        self.target_column = target_column
 
     def write_class(self) -> None:
         """
@@ -99,12 +103,16 @@ class DataReaderWriter:
         str
             Python source code for the DataReader class with paths substituted.
         """
+        if self.target_column is not None:
+            class_template = class_template + additional_supervised_methods
+
         filled_template = class_template.strip()
         # Use relative paths from project root
         train_rel = self.file_manager.train_data_file.relative_to(self.file_manager.project_path)
         test_rel = self.file_manager.test_data_file.relative_to(self.file_manager.project_path)
         filled_template = filled_template.format(
             train_filepath=repr(str(train_rel).replace('\\', '/')),
-            test_filepath=repr(str(test_rel).replace('\\', '/'))
+            test_filepath=repr(str(test_rel).replace('\\', '/')),
+            target_column=repr(self.target_column)
         )
         return filled_template
