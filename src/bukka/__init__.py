@@ -1,5 +1,5 @@
 import argparse
-from bukka.logistics.project import Project
+from bukka.project import Project
 from bukka.data_management.dataset import Dataset
 from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.utils import bukka_logger

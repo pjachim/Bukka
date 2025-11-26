@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from unittest.mock import patch
 
-from bukka.logistics.project import Project
+from bukka.project import Project
 
 
 class TestProjectNotebookIntegration:

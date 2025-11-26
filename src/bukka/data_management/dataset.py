@@ -1,5 +1,4 @@
-from bukka.logistics.files import file_manager
-import pyarrow
+from bukka.utils.files import file_manager
 import pyarrow.parquet as pq
 from bukka.utils.bukka_logger import BukkaLogger
 
