@@ -41,6 +41,7 @@ class EnvironmentBuilder:
         """
         self._build_venv()
         self._install_packages()
+        self._install_package_editable()
 
     def _build_venv(self):
         """
