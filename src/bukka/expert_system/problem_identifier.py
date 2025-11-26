@@ -23,6 +23,12 @@ class ProblemIdentifier:
         self.target_column: str | None = target_column
         self.problems_to_solve: ProblemsToSolve = ProblemsToSolve()
 
+    def identify_problems(self) -> None:
+        """Identify problems in the dataset and populate `problems_to_solve`."""
+        self.multivariate_problems()
+        self.univariate_problems()
+        self.identify_ml_problem()
+
     def multivariate_problems(self) -> None:
         """Detect multivariate issues and add matching `Problem`s.
 
@@ -35,14 +41,6 @@ class ProblemIdentifier:
         #        problem_name="Multicollinearity",
         #        description="The dataset contains multicollinear features.",
         #        solutions=[sol.multivariate_solutions.remove_multicollinear_features]
-        #    )
-        #    self.problems_to_solve.add_problem(problem)
-        #
-        #if self.dataset.backend.has_strong_correlations():
-        #    problem = Problem(
-        #        problem_name="Strong Correlations",
-        #        description="The dataset contains strongly correlated features.",
-        #        solutions=[sol.multivariate_solutions.handle_strong_correlations]
         #    )
         #    self.problems_to_solve.add_problem(problem)
 
@@ -105,7 +103,7 @@ class ProblemIdentifier:
                 )
                 self.problems_to_solve.add_problem(problem)
 
-    def _identify_ml_problem(self) -> str:
+    def identify_ml_problem(self) -> str:
         """Identify the type of machine learning needed."""
         if self.target_column is None:
             self.ml_problem = Problem(
