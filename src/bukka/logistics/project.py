@@ -9,6 +9,7 @@ from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
+from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
 from bukka.utils.bukka_logger import BukkaLogger
 
 logger = BukkaLogger(__name__)
@@ -53,6 +54,7 @@ class Project:
         
         if not self.skip_venv:
             logger.info("Setting up project environment")
+            self._write_toml()
             self._setup_environment()
         else:
             logger.info("Skipping environment setup as per configuration")
@@ -228,3 +230,21 @@ class Project:
 
         logger.info("Writing starter notebook")
         starter_notebook_writer.write_notebook()
+
+    def _write_toml(self) -> None:
+        """
+        Write a pyproject.toml file for the project.
+
+        This method creates a pyproject.toml file with basic project
+        metadata and configuration.
+        """
+        toml_path = self.file_manager.pyproject_toml_path
+
+        logger.info(f"Writing pyproject.toml to: {toml_path}")
+        writer = PyprojectTomlWriter(
+            file_manager=self.file_manager,
+            project_name=self.name
+        )
+
+        writer.write_class()
+        logger.info(f"pyproject.toml written to: {toml_path}")
