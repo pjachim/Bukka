@@ -1,5 +1,6 @@
 from typing import Any, List, Set, Tuple, Dict
 from bukka.expert_system.problem_identifier import ProblemIdentifier
+from pathlib import Path
 
 class PipelineWriter:
     """Build a pipeline plan from identified problems and chosen solutions.
@@ -16,7 +17,7 @@ class PipelineWriter:
     checks to extract import strings, instantiation text and step names.
     """
 
-    def __init__(self, pipeline_steps: List[Tuple[Any, Any]]) -> None:
+    def __init__(self, pipeline_steps: List[Tuple[Any, Any]], output_path: str | Path) -> None:
         """Create a `PipelineWriter`.
 
         Args:
@@ -25,13 +26,14 @@ class PipelineWriter:
                 candidate `solutions`.
         """
         self.pipeline_steps = pipeline_steps
+        self.output_path = Path(output_path)
 
         # Public results filled by `write()`
         self.imports: Set[str] = set()
         self.instantiations: Dict[str, str] = {}
         self.pipeline_definition: str = ""
 
-    def write(self) -> Tuple[List[Any], Set[str]]:
+    def write(self) -> None:
         """Assemble the pipeline plan and return steps and imports.
 
         Returns
@@ -44,7 +46,9 @@ class PipelineWriter:
         self._fetch_step_definitions()
         self._fetch_imports()
         self._define_sklearn_pipeline()
-        return self.pipeline_steps, self.imports
+
+        with open(self.output_path, "w") as f:
+            f.write(self.pipeline_definition)
 
     def _fetch_imports(self) -> None:
         """Populate `self.imports` from the selected pipeline steps."""
