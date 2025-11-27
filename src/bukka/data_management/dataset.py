@@ -6,10 +6,6 @@ logger = BukkaLogger(__name__)
 
 # Class to handle stats
 class DatasetStatistics:
-    def backend(self):
-        import bukka.data_management.wrapper.polars as polars_wrapper
-        return polars_wrapper.PolarsOperations()
-
     def identify_multicollinearity(self):
         # Placeholder for multicollinearity identification logic
         raise NotImplementedError("Multicollinearity identification not implemented.")

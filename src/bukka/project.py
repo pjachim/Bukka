@@ -11,6 +11,7 @@ from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
 from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
 from bukka.utils.bukka_logger import BukkaLogger
+from bukka.expert_system.pipeline_builder import PipelineBuilder
 
 logger = BukkaLogger(__name__)
 
@@ -108,16 +109,13 @@ class Project:
             strata=strata,
             stratify=stratify
         )
-        logger.debug(f"Dataset created with {len(dataset.feature_columns)} features")
-        
-        logger.info("Initializing ProblemIdentifier")
-        identifier = ProblemIdentifier(dataset, target_column)
-        identifier.identify_problems()
-        logger.debug(f"Identified {len(identifier.problems_to_solve.problems)} problems to solve")
+        logger.debug("Dataset instance created")
+        builder = PipelineBuilder(dataset, target_column)
+        pipeline_steps = builder.build_pipeline()
 
         # Generate pipeline
         logger.info("Generating pipeline code")
-        writer = PipelineWriter(identifier)
+        writer = PipelineWriter(pipeline_steps)
         logger.debug("PipelineWriter initialized")
         
         _, _ = writer.write()

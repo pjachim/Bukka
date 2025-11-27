@@ -20,7 +20,7 @@ class PipelineBuilder:
     checks to extract import strings, instantiation text and step names.
     """
 
-    def __init__(self, problem_identifier: ProblemIdentifier) -> None:
+    def __init__(self, dataset, target_column) -> None:
         """Create a `PipelineBuilder`.
 
         Args:
@@ -28,7 +28,11 @@ class PipelineBuilder:
                 exposes `problems_to_solve` and `ml_problem` with
                 candidate `solutions`.
         """
-        self.problem_identifier = problem_identifier
+        self.problem_identifier = ProblemIdentifier(
+            dataset, target_column
+        )
+        self.problem_identifier.identify_problems()
+        
         # Prefer random ordering for the ml_problem solutions so pop() is non-deterministic
         if hasattr(self.problem_identifier, 'ml_problem') and self.problem_identifier.ml_problem is not None:
             try:
@@ -60,13 +64,13 @@ class PipelineBuilder:
                 # Log but don't crash if ml_problem is malformed
                 pass
 
-    def _processor_selection(self) -> list[tuple[Solution, Any]]:
+    def _processor_selection(self) -> list[tuple[list[Solution], Any]]:
         """Choose one solution per problem.
 
         Returns a list of (solution, problem) tuples to preserve problem
         metadata like features and problem_type.
         """
-        chosen: list[tuple[Solution, Any]] = []
+        chosen: list[tuple[Solution, Problem]] = []
         problems = getattr(self.problem_identifier.problems_to_solve, "problems", [])
         for p in problems:
             try:
