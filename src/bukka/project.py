@@ -5,7 +5,6 @@ from typing import Optional
 from bukka.utils.files.file_manager import FileManager
 from bukka.environment.environment import EnvironmentBuilder
 from bukka.data_management.dataset import Dataset
-from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
@@ -122,6 +121,8 @@ class Project:
             pipeline_steps=pipeline_steps,
             output_path=self.file_manager.generated_pipes / filename
         )
+        writer.write()
+        logger.debug(f"Pipeline written to: {self.file_manager.generated_pipes / filename}")
         logger.info("Pipeline generation complete", format_level='h4')
     
     def _write_data_reader_class(self) -> None:
