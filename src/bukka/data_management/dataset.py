@@ -1,11 +1,16 @@
-from bukka.logistics.files import file_manager
-import pyarrow
+from bukka.utils.files import file_manager
 import pyarrow.parquet as pq
 from bukka.utils.bukka_logger import BukkaLogger
 
 logger = BukkaLogger(__name__)
 
-class Dataset:
+# Class to handle stats
+class DatasetStatistics:
+    def identify_multicollinearity(self):
+        # Placeholder for multicollinearity identification logic
+        raise NotImplementedError("Multicollinearity identification not implemented.")
+
+class Dataset(DatasetStatistics):
     """
     Dataset class for managing and splitting datasets for expert systems.
     Args:

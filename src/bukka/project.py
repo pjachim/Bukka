@@ -2,15 +2,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from bukka.logistics.files.file_manager import FileManager
-from bukka.logistics.environment.environment import EnvironmentBuilder
+from bukka.utils.files.file_manager import FileManager
+from bukka.environment.environment import EnvironmentBuilder
 from bukka.data_management.dataset import Dataset
-from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
 from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
 from bukka.utils.bukka_logger import BukkaLogger
+from bukka.expert_system.pipeline_builder import PipelineBuilder
 
 logger = BukkaLogger(__name__)
 
@@ -75,7 +75,7 @@ class Project:
             dataframe_backend: str = "polars",
             strata: list[str] | None = None,
             stratify: bool = True,
-        ) -> str:
+        ):
         """Generate a candidate pipeline and save it to the project pipelines folder.
 
         This method creates a `Dataset` using the project's `FileManager`, runs
@@ -99,11 +99,6 @@ class Project:
         logger.info("Starting pipeline generation", format_level='h4')
         logger.debug(f"Target column: {target_column}")
         logger.debug(f"Dataframe backend: {dataframe_backend}")
-        
-        if self.file_manager is None:
-            logger.debug("FileManager not initialized, building skeleton")
-            # Ensure skeleton exists and dataset is copied
-            self._build_skeleton()
 
         logger.info("Creating Dataset instance")
         dataset = Dataset(
@@ -113,55 +108,22 @@ class Project:
             strata=strata,
             stratify=stratify
         )
-        logger.debug(f"Dataset created with {len(dataset.feature_columns)} features")
-        
-        logger.info("Initializing ProblemIdentifier")
-        identifier = ProblemIdentifier(dataset, target_column)
-        
-        # Run detection phases
-        logger.info("Running multivariate problem detection")
-        identifier.multivariate_problems()
-        logger.debug("Multivariate problem detection complete")
-        
-        logger.info("Running univariate problem detection")
-        identifier.univariate_problems()
-        logger.debug("Univariate problem detection complete")
-        
-        # identify ml problem (may be clustering/regression/classification)
-        logger.info("Identifying ML problem type")
-        try:
-            identifier._identify_ml_problem()
-            logger.debug("ML problem identification complete")
-        except Exception as e:
-            logger.warn(f"Failed to identify ML problem: {e}")
-            # If private method naming changes, ignore to avoid crashing here
-            pass
+        logger.debug("Dataset instance created")
+        builder = PipelineBuilder(dataset, target_column)
+        pipeline_steps = builder.build_pipeline()
 
         # Generate pipeline
-        logger.info("Generating pipeline code")
-        writer = PipelineWriter(identifier)
-        logger.debug("PipelineWriter initialized")
-        
-        _, _ = writer.write()
-        pipeline_text = writer.pipeline_definition or ""
-        logger.debug(f"Pipeline code generated: {len(pipeline_text)} characters")
-
-        # Prepare destination file
-        gen_dir: Path = self.file_manager.generated_pipes
-        logger.debug(f"Pipeline destination directory: {gen_dir}")
-        gen_dir.mkdir(parents=True, exist_ok=True)
-        
         timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
         filename = f"pipeline_{timestamp}.py"
-        dest = gen_dir / filename
-        logger.debug(f"Pipeline filename: {filename}")
 
-        # Write pipeline text
-        logger.info(f"Writing pipeline to: {dest}")
-        dest.write_text(pipeline_text, encoding="utf-8")
+        logger.info("Generating pipeline code")
+        writer = PipelineWriter(
+            pipeline_steps=pipeline_steps,
+            output_path=self.file_manager.generated_pipes / filename
+        )
+        writer.write()
+        logger.debug(f"Pipeline written to: {self.file_manager.generated_pipes / filename}")
         logger.info("Pipeline generation complete", format_level='h4')
-
-        return str(dest.resolve())
     
     def _write_data_reader_class(self) -> None:
         """Generate and write a data reader class to the project.

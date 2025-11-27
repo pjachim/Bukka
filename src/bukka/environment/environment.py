@@ -1,6 +1,6 @@
 import venv
 import subprocess
-from bukka.logistics.files.file_manager import FileManager
+from bukka.utils.files.file_manager import FileManager
 from bukka.utils.reference import requirements
 
 class EnvironmentBuilder:

@@ -1,4 +1,4 @@
-from bukka.logistics.files.file_manager import FileManager
+from bukka.utils.files.file_manager import FileManager
 
 class_template = '''
 import polars as pl

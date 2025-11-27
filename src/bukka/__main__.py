@@ -1,5 +1,5 @@
 import argparse
-from bukka.logistics.project import Project
+from bukka.project import Project
 from bukka.utils import bukka_logger
 
 logger = bukka_logger.BukkaLogger(__name__)
