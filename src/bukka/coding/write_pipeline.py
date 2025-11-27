@@ -25,7 +25,10 @@ class PipelineWriter:
                 exposes `problems_to_solve` and `ml_problem` with
                 candidate `solutions`.
         """
-        self.pipeline_steps = pipeline_steps
+        if pipeline_steps is None:
+            self.pipeline_steps = []
+        else:
+            self.pipeline_steps = pipeline_steps
         self.output_path = Path(output_path)
 
         # Public results filled by `write()`

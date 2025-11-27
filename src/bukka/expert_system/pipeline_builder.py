@@ -64,6 +64,8 @@ class PipelineBuilder:
                 # Log but don't crash if ml_problem is malformed
                 pass
 
+        return self.pipeline_steps
+
     def _processor_selection(self) -> list[tuple[list[Solution], Any]]:
         """Choose one solution per problem.
 
