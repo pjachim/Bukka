@@ -3,15 +3,27 @@ from pathlib import Path
 from bukka.coding.utils.template_handler import TemplateBaseClass
 
 # Template for the complete pipeline file
-PIPELINE_TEMPLATE = '''
-{imports}
+FULL_TEMPLATE = '''
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+{{imports}}
 
-{instantiations}
+{{instantiations}}
 
 {preprocessor}
 
-{pipeline}
+pipeline = Pipeline([
+    {{pipeline}}
+])
 '''
+
+PREPROCESSOR_TEMPLATE = '''
+preprocessor = ColumnTransformer([
+    {transformer_steps}
+])
+'''
+
+SEPARATOR = ",\n\t"
 
 
 class PipelineWriter(TemplateBaseClass):
@@ -73,7 +85,7 @@ class PipelineWriter(TemplateBaseClass):
     ...     pipeline_steps=pipeline_steps,
     ...     output_path=Path("my_pipeline.py")
     ... )
-    >>> writer.write_class()  # Generates and writes the pipeline code
+    >>> writer.write_code()  # Generates and writes the pipeline code
 
     Notes
     -----
@@ -117,7 +129,7 @@ class PipelineWriter(TemplateBaseClass):
         
         # Initialize parent class with template
         super().__init__(
-            template=PIPELINE_TEMPLATE,
+            template=FULL_TEMPLATE,
             output_path=output_path,
             kwargs=kwargs,
             expected_args=expected_args
@@ -125,20 +137,6 @@ class PipelineWriter(TemplateBaseClass):
         
         # Store the pipeline definition for backward compatibility
         self.pipeline_definition = self._fill_template()
-    
-    def write(self) -> None:
-        """Write the pipeline to the output file.
-        
-        This method uses the parent class's write_class() method to write
-        the filled template to the output file.
-        
-        Examples
-        --------
-        >>> from pathlib import Path
-        >>> writer = PipelineWriter([], Path("pipeline.py"))
-        >>> writer.write()  # Writes the pipeline code to pipeline.py
-        """
-        self.write_class()
 
     def _fetch_imports(self) -> None:
         """Populate self.imports from the selected pipeline steps.
@@ -150,15 +148,12 @@ class PipelineWriter(TemplateBaseClass):
         >>> "from sklearn.pipeline import Pipeline" in writer.imports
         True
         """
-        imports: set[str] = set()
+        self.imports: set[str] = set()
+
         for sol_obj, _ in self.pipeline_steps:
             imp = sol_obj.fetch_import()
             if imp:
-                imports.add(imp)
-        # Add ColumnTransformer and Pipeline imports
-        imports.add("from sklearn.compose import ColumnTransformer")
-        imports.add("from sklearn.pipeline import Pipeline")
-        self.imports = imports
+                self.imports.add(imp)
 
     def _fetch_step_definitions(self) -> None:
         """Create instantiation lines for each pipeline step.
@@ -180,22 +175,20 @@ class PipelineWriter(TemplateBaseClass):
         instantiations: dict[str, str] = {}
         used_names: set[str] = set()
 
-        for idx, (sol_obj, problem) in enumerate(self.pipeline_steps, start=1):
+        for i, (sol_obj, problem) in enumerate(self.pipeline_steps, start=1):
             # Decide a reasonable variable/name for the step
-            name = None
             if hasattr(sol_obj, "name"):
                 name = sol_obj.name
             else:
-                name = f"step_{idx}"
+                name = f"step_{i}"
 
             # Make a safe python identifier for the variable
-            var_name = str(name).lower().replace(" ", "_")
+            var_name = self.make_python_string_variable_safe(name, lowercase=True)
 
             # Ensure uniqueness by appending a counter if needed
-            original_var_name = var_name
             counter = 1
             while var_name in used_names:
-                var_name = f"{original_var_name}_{counter}"
+                var_name = self.make_python_string_variable_safe(f"{var_name}_{counter}", lowercase=True)
                 counter += 1
             
             used_names.add(var_name)
@@ -206,6 +199,68 @@ class PipelineWriter(TemplateBaseClass):
             instantiations[var_name] = inst
 
         self.instantiations = instantiations
+
+    def _parse_pipeline_steps(self) -> None:
+        self.transformers: list[tuple[str, str, list[str]]] = []  # (name, var_name, columns)
+        self.manipulators: list[str] = []  # var_names for multi-column steps
+        self.model_step: str | None = None
+
+        for (sol_obj, problem), var_name in zip(self.pipeline_steps, self.instantiations.keys()):
+            problem_type = getattr(problem, "problem_type", None)
+            features = getattr(problem, "features", [])
+            
+            if problem_type == "transformer":
+                # Single-column transformer
+                self.transformers.append((var_name, var_name, features))
+            elif problem_type == "manipulator":
+                # Multi-column manipulator
+                self.manipulators.append(var_name)
+            elif problem_type == "model":
+                # Final model step
+                self.model_step = var_name
+            else:
+                # Default: treat as manipulator if no type specified
+                self.manipulators.append(var_name)
+
+    def _build_preprocessor(self, transformers, pipeline_steps) -> tuple[str, list[str]]:
+        """Build the ColumnTransformer preprocessor code if needed.
+
+        This method constructs the ColumnTransformer definition based on
+        the pipeline steps that are transformers. It groups single-column
+        transformers into the ColumnTransformer and leaves multi-column
+        manipulators as separate pipeline steps.
+
+        Returns
+        -------
+        str
+            The ColumnTransformer definition code, or an empty string if
+            no transformers are present.
+
+        Examples
+        --------
+        >>> # Assuming writer has pipeline_steps with transformers
+        >>> preprocessor_code = writer._build_preprocessor()
+        >>> "ColumnTransformer" in preprocessor_code
+        True
+        """
+        if transformers:
+            # Create ColumnTransformer for single-column transformers
+            ct_items = []
+            for name, var_name, columns in transformers:
+                cols_repr = repr(columns) if len(columns) > 1 else repr(columns[0]) if columns else "[]"
+                ct_items.append(f"('{name}', {var_name}, {cols_repr})")
+            
+            ct_body = SEPARATOR.join(ct_items)
+            PREPROCESSOR_TEMPLATE.strip().format(
+
+            )
+            preprocessor_str = f"preprocessor = ColumnTransformer([\n\t\t{ct_body}\n\t], remainder='passthrough')"
+            pipeline_steps.append("('preprocessor', preprocessor)")
+
+            transformer_steps
+
+        else:
+            preprocessor_str = ""
 
     def _build_template_kwargs(self) -> dict[str, Any]:
         """Build the kwargs dictionary for template substitution.
@@ -239,41 +294,14 @@ class PipelineWriter(TemplateBaseClass):
         instantiations_str = "\n".join(instantiation_lines) if instantiation_lines else ""
         
         # Categorize steps by type
-        transformers: list[tuple[str, str, list[str]]] = []  # (name, var_name, columns)
-        manipulators: list[str] = []  # var_names for multi-column steps
-        model_step: str | None = None
 
-        for (sol_obj, problem), var_name in zip(self.pipeline_steps, self.instantiations.keys()):
-            problem_type = getattr(problem, "problem_type", None)
-            features = getattr(problem, "features", [])
-            
-            if problem_type == "transformer":
-                # Single-column transformer
-                transformers.append((var_name, var_name, features))
-            elif problem_type == "manipulator":
-                # Multi-column manipulator
-                manipulators.append(var_name)
-            elif problem_type == "model":
-                # Final model step
-                model_step = var_name
-            else:
-                # Default: treat as manipulator if no type specified
-                manipulators.append(var_name)
         
         # Build preprocessor (ColumnTransformer)
         preprocessor_str = ""
         pipeline_steps: list[str] = []
-        
-        if transformers:
-            # Create ColumnTransformer for single-column transformers
-            ct_items = []
-            for name, var_name, columns in transformers:
-                cols_repr = repr(columns) if len(columns) > 1 else repr(columns[0]) if columns else "[]"
-                ct_items.append(f"('{name}', {var_name}, {cols_repr})")
-            
-            ct_body = ",\n\t\t".join(ct_items)
-            preprocessor_str = f"preprocessor = ColumnTransformer([\n\t\t{ct_body}\n\t], remainder='passthrough')"
-            pipeline_steps.append("('preprocessor', preprocessor)")
+
+        self._build_preprocessor(transformers, pipeline_steps)
+
 
         # Add manipulators to pipeline
         for var_name in manipulators:
