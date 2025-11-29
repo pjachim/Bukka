@@ -120,16 +120,12 @@ class PipelineWriter(TemplateBaseClass):
         self._fetch_imports()
         self._parse_pipeline_steps()
         
-        # Prepare template kwargs
-        kwargs = self._build_template_kwargs()
-        expected_args = ["imports", "instantiations", "preprocessor", "pipeline"]
-        
         # Initialize parent class with template
         super().__init__(
             template=FULL_TEMPLATE,
             output_path=output_path,
-            kwargs=kwargs,
-            expected_args=expected_args
+            kwargs=self._build_template_kwargs(),
+            expected_args=["imports", "instantiations", "preprocessor", "pipeline"]
         )
         
         # Store the pipeline definition for backward compatibility
