@@ -1,6 +1,6 @@
 from bukka.utils.files.file_manager import FileManager
 
-class_template = '''
+CLASS_TEMPLATE = '''
 import polars as pl
 
 class DataReader:
@@ -34,7 +34,7 @@ class DataReader:
 '''
 
 # These methods are added only if a target column is specified (no need for X/y split for unsupervised tasks)
-additional_supervised_methods = '''
+ADDITIONAL_SUPERVISED_METHODS = '''
     def readXy_train(self, target_column: str | None = {target_column}) -> tuple[pl.DataFrame, pl.DataFrame]:
         """Reads the training data and splits it into features and target."""
         return self._readXy(self.train_filepath, target_column, is_train=True)
@@ -78,7 +78,7 @@ class DataReaderWriter:
         self.file_manager = file_manager
         self.target_column = target_column
 
-    def write_class(self) -> None:
+    def write_code(self) -> None:
         """
         Write the DataReader class to the configured output path.
 
@@ -104,7 +104,9 @@ class DataReaderWriter:
             Python source code for the DataReader class with paths substituted.
         """
         if self.target_column is not None:
-            class_template = class_template + additional_supervised_methods
+            class_template = CLASS_TEMPLATE + ADDITIONAL_SUPERVISED_METHODS
+        else:
+            class_template = CLASS_TEMPLATE
 
         filled_template = class_template.strip()
         # Use relative paths from project root

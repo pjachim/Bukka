@@ -121,7 +121,7 @@ class Project:
             pipeline_steps=pipeline_steps,
             output_path=self.file_manager.generated_pipes / filename
         )
-        writer.write()
+        writer.write_code()
         logger.debug(f"Pipeline written to: {self.file_manager.generated_pipes / filename}")
         logger.info("Pipeline generation complete", format_level='h4')
     
@@ -133,7 +133,7 @@ class Project:
         The generated class is saved to the project's data readers folder.  
         """
         writer = DataReaderWriter(self.file_manager)
-        writer.write_class()
+        writer.write_code()
         logger.info("Data reader class generation complete", format_level='h4')
 
     def _build_skeleton(self) -> None:
@@ -208,5 +208,5 @@ class Project:
             project_name=self.name
         )
 
-        writer.write_class()
+        writer.write_code()
         logger.info(f"pyproject.toml written to: {toml_path}")
