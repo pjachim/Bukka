@@ -1,5 +1,7 @@
 import importlib
 from types import SimpleNamespace
+from pathlib import Path
+import tempfile
 
 import pytest
 
@@ -9,13 +11,11 @@ from bukka.expert_system.solution import Solution
 
 
 class TestPipelineWriter:
-    def test_pipeline_generation_and_import_extraction(self):
-        """PipelineWriter should select processors, extract imports and build a ColumnTransformer/Pipeline.
+    def test_pipeline_generation_and_import_extraction(self, tmp_path):
+        """PipelineWriter should accept pipeline steps, extract imports and build a ColumnTransformer/Pipeline.
 
-        This test builds a minimal fake `ProblemIdentifier` with one transformer
-        solution and one model solution. The behavior under test
-        is deterministic because each problem's solution list contains a
-        single element.
+        This test creates pipeline steps directly (solution, problem tuples) and
+        verifies that the writer correctly generates imports and pipeline code.
         """
 
         # A transformer solution with proper Solution interface
@@ -52,29 +52,44 @@ class TestPipelineWriter:
             problem_type="model",
         )
 
-        problems_to_solve = SimpleNamespace(problems=[transformer_problem])
-        ml_problem = model_problem
-        pid = SimpleNamespace(problems_to_solve=problems_to_solve, ml_problem=ml_problem)
+        # Create pipeline steps directly
+        pipeline_steps = [
+            (transformer_sol, transformer_problem),
+            (model_sol, model_problem)
+        ]
+        
+        output_path = tmp_path / "pipeline.py"
+        writer = PipelineWriter(pipeline_steps=pipeline_steps, output_path=output_path)
+        
+        # Verify imports are extracted correctly
+        assert "from sklearn.preprocessing import StandardScaler" in writer.imports
+        assert "from sklearn.linear_model import LogisticRegression" in writer.imports
+        assert "from sklearn.compose import ColumnTransformer" in writer.imports
+        assert "from sklearn.pipeline import Pipeline" in writer.imports
 
-        writer = PipelineWriter(pid)
-        steps, imports = writer.write()
-
-        # Steps should be a list of tuples (solution, problem)
-        assert isinstance(steps, list)
-        assert len(steps) == 2
-        assert all(isinstance(step, tuple) and len(step) == 2 for step in steps)
-
-        # Imports should include solution imports plus ColumnTransformer and Pipeline
-        assert "from sklearn.preprocessing import StandardScaler" in imports
-        assert "from sklearn.linear_model import LogisticRegression" in imports
-        assert "from sklearn.compose import ColumnTransformer" in imports
-        assert "from sklearn.pipeline import Pipeline" in imports
+        # Verify instantiations are created
+        assert len(writer.instantiations) == 2
+        assert "mytransformer" in writer.instantiations
+        assert "mymodel" in writer.instantiations
 
         # pipeline_definition should contain ColumnTransformer and Pipeline
         assert "ColumnTransformer(" in writer.pipeline_definition
         assert "pipeline = Pipeline(" in writer.pipeline_definition
+        
+        # Write the file
+        writer.write()
+        
+        # Verify the file was created
+        assert output_path.exists()
+        
+        # Verify the file contents
+        content = output_path.read_text()
+        assert "from sklearn.preprocessing import StandardScaler" in content
+        assert "from sklearn.linear_model import LogisticRegression" in content
+        assert "ColumnTransformer(" in content
+        assert "pipeline = Pipeline(" in content
 
-    def test_unique_variable_names(self):
+    def test_unique_variable_names(self, tmp_path):
         """Test that duplicate solution names get unique variable names."""
         
         # Two solutions with the same name
@@ -108,12 +123,14 @@ class TestPipelineWriter:
             problem_type="transformer",
         )
         
-        problems_to_solve = SimpleNamespace(problems=[problem1, problem2])
-        ml_problem = SimpleNamespace(solutions=[])
-        pid = SimpleNamespace(problems_to_solve=problems_to_solve, ml_problem=ml_problem)
+        # Create pipeline steps directly
+        pipeline_steps = [
+            (sol1, problem1),
+            (sol2, problem2)
+        ]
         
-        writer = PipelineWriter(pid)
-        steps, imports = writer.write()
+        output_path = tmp_path / "pipeline.py"
+        writer = PipelineWriter(pipeline_steps=pipeline_steps, output_path=output_path)
         
         # Check that instantiations have unique keys
         assert len(writer.instantiations) == 2
