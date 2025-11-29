@@ -6,20 +6,16 @@ from bukka.coding.utils.template_handler import TemplateBaseClass
 FULL_TEMPLATE = '''
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-{{imports}}
+{imports}
 
-{{instantiations}}
+{instantiations}
 
-{preprocessor}
-
-pipeline = Pipeline([
-    {{pipeline}}
-])
-'''
-
-PREPROCESSOR_TEMPLATE = '''
 preprocessor = ColumnTransformer([
     {transformer_steps}
+])
+
+pipeline = Pipeline([
+    {pipeline}
 ])
 '''
 
@@ -122,6 +118,7 @@ class PipelineWriter(TemplateBaseClass):
         # Build all components
         self._fetch_step_definitions()
         self._fetch_imports()
+        self._parse_pipeline_steps()
         
         # Prepare template kwargs
         kwargs = self._build_template_kwargs()
@@ -222,7 +219,7 @@ class PipelineWriter(TemplateBaseClass):
                 # Default: treat as manipulator if no type specified
                 self.manipulators.append(var_name)
 
-    def _build_preprocessor(self, transformers, pipeline_steps) -> tuple[str, list[str]]:
+    def _build_preprocessor(self) -> str:
         """Build the ColumnTransformer preprocessor code if needed.
 
         This method constructs the ColumnTransformer definition based on
@@ -243,25 +240,93 @@ class PipelineWriter(TemplateBaseClass):
         >>> "ColumnTransformer" in preprocessor_code
         True
         """
-        if transformers:
-            # Create ColumnTransformer for single-column transformers
+        if self.transformers:
             ct_items = []
-            for name, var_name, columns in transformers:
+            for name, var_name, columns in self.transformers:
                 cols_repr = repr(columns) if len(columns) > 1 else repr(columns[0]) if columns else "[]"
                 ct_items.append(f"('{name}', {var_name}, {cols_repr})")
             
-            ct_body = SEPARATOR.join(ct_items)
-            PREPROCESSOR_TEMPLATE.strip().format(
-
-            )
-            preprocessor_str = f"preprocessor = ColumnTransformer([\n\t\t{ct_body}\n\t], remainder='passthrough')"
-            pipeline_steps.append("('preprocessor', preprocessor)")
-
-            transformer_steps
+            return SEPARATOR.join(ct_items)
 
         else:
-            preprocessor_str = ""
+            return ""
 
+    def _build_pipeline_str(self) -> str:
+        """Build the final pipeline definition string.
+
+        This method constructs the final pipeline definition by combining
+        all pipeline steps, including the preprocessor, manipulators, and
+        model step.
+
+        Returns
+        -------
+        str
+            The final pipeline definition string.
+
+        Examples
+        --------
+        >>> # Assuming writer has pipeline_steps
+        >>> pipeline_str = writer._build_pipeline_str()
+        >>> "pipeline = Pipeline([" in pipeline_str
+        True
+        """
+        steps = []
+
+        # Add preprocessor if exists
+        if self.transformers:
+            steps.append("('preprocessor', preprocessor)")
+
+        # Add manipulators
+        for var_name in self.manipulators:
+            steps.append(f"('{var_name}', {var_name})")
+
+        # Add model as final step
+        if self.model_step:
+            steps.append(f"('{self.model_step}', {self.model_step})")
+
+        return SEPARATOR.join(steps)
+    
+    def _build_imports_str(self) -> str:
+        """Build the imports section of the pipeline file.
+        
+        Returns
+        -------
+        str
+            The formatted import statements for the pipeline file.
+        
+        Examples
+        --------
+        >>> # Assuming writer has imports populated
+        >>> imports_str = writer._build_imports_str()
+        >>> "from sklearn.pipeline import Pipeline" in imports_str
+        True
+        """
+        if self.imports:
+            return "\n".join(sorted(self.imports))
+        else:
+            return ""
+        
+    def _build_instantiations_str(self) -> str:
+        """Build the instantiations section of the pipeline file.
+        
+        Returns
+        -------
+        str
+            The formatted instantiation lines for the pipeline file.
+        
+        Examples
+        --------
+        >>> # Assuming writer has instantiations populated
+        >>> inst_str = writer._build_instantiations_str()
+        >>> "scaler = StandardScaler()" in inst_str
+        True
+        """
+        inst_lines = [
+            f"{var_name} = {inst}" 
+            for var_name, inst in self.instantiations.items()
+        ]
+        return "\n".join(inst_lines) if inst_lines else ""
+    
     def _build_template_kwargs(self) -> dict[str, Any]:
         """Build the kwargs dictionary for template substitution.
         
@@ -283,44 +348,9 @@ class PipelineWriter(TemplateBaseClass):
         >>> "pipeline" in kwargs
         True
         """
-        # Format imports
-        imports_str = "\n".join(sorted(self.imports)) if self.imports else ""
-        
-        # Format instantiations
-        instantiation_lines = [
-            f"{var_name} = {inst}" 
-            for var_name, inst in self.instantiations.items()
-        ]
-        instantiations_str = "\n".join(instantiation_lines) if instantiation_lines else ""
-        
-        # Categorize steps by type
-
-        
-        # Build preprocessor (ColumnTransformer)
-        preprocessor_str = ""
-        pipeline_steps: list[str] = []
-
-        self._build_preprocessor(transformers, pipeline_steps)
-
-
-        # Add manipulators to pipeline
-        for var_name in manipulators:
-            pipeline_steps.append(f"('{var_name}', {var_name})")
-
-        # Add model as final step
-        if model_step:
-            pipeline_steps.append(f"('{model_step}', {model_step})")
-
-        # Create final pipeline
-        if pipeline_steps:
-            pipeline_body = ",\n\t".join(pipeline_steps)
-            pipeline_str = f"pipeline = Pipeline([\n\t{pipeline_body}\n])"
-        else:
-            pipeline_str = "pipeline = Pipeline([])"
-        
         return {
-            "imports": imports_str,
-            "instantiations": instantiations_str,
-            "preprocessor": preprocessor_str,
-            "pipeline": pipeline_str
+            "imports": self._build_imports_str(),
+            "instantiations": self._build_instantiations_str(),
+            "transformer_steps": self._build_preprocessor(),
+            "pipeline": self._build_pipeline_str()
         }
