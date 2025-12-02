@@ -9,7 +9,7 @@ from bukka.data_management.dataset_functionality import (
 )
 logger = BukkaLogger(__name__)
 
-class Dataset(DatasetStatistics, DatasetManagement, DatasetIO, DatasetQuality):
+class Dataset:
     """Dataset class for managing and splitting datasets for expert systems.
     
     This class loads, splits, and manages datasets, delegating backend operations
@@ -74,6 +74,11 @@ class Dataset(DatasetStatistics, DatasetManagement, DatasetIO, DatasetQuality):
             train_size=0.8,
             feature_columns: list[str] | None = None
         ):
+        self.io = DatasetIO()
+        self.management = DatasetManagement()
+        self.statistics = DatasetStatistics()
+        self.quality = DatasetQuality()
+
         logger.debug(f"Initializing Dataset with target_column='{target_column}', train_size={train_size}, stratify={stratify}")
         self.file_manager = file_manager
         self.target_column = target_column
@@ -87,7 +92,7 @@ class Dataset(DatasetStatistics, DatasetManagement, DatasetIO, DatasetQuality):
         dataset_path = getattr(self.file_manager, 'dataset_path', None)
         if dataset_path is not None and dataset_path.exists():
             logger.debug(f"Loading dataset from: {dataset_path}")
-            df = self.load_from_file(dataset_path)
+            df = self.io.load_from_file(dataset_path)
         else:
             logger.debug("No dataset path found or dataset does not exist, skipping dataset loading")
 
@@ -99,15 +104,15 @@ class Dataset(DatasetStatistics, DatasetManagement, DatasetIO, DatasetQuality):
         if stratify is None:
             strata = []
 
-        self.train_df, self.test_df = self.split_dataset(
+        self.train_df, self.test_df = self.management.split_dataset(
             df=df,
             target_column=target_column,
             strata=strata,
             train_size=train_size,
             stratify=stratify
         )
-        self.save_to_parquet(self.train_df, self.file_manager.train_data_file)
-        self.save_to_parquet(self.test_df, self.file_manager.test_data_file)
+        self.io.save_to_parquet(self.train_df, self.file_manager.train_data_file)
+        self.io.save_to_parquet(self.test_df, self.file_manager.test_data_file)
 
         logger.debug("Dataset split completed")
 
@@ -166,7 +171,7 @@ class Dataset(DatasetStatistics, DatasetManagement, DatasetIO, DatasetQuality):
         if columns is None:
             columns = self.feature_columns
 
-        return self.identify_multicollinearity(self.train_df, columns, threshold)
+        return self.statistics.identify_multicollinearity(self.train_df, columns, threshold)
     
     def get_varied_scale_train(self, column_name: str):
         """Calculate the range of a column in the training dataset.
@@ -199,7 +204,7 @@ class Dataset(DatasetStatistics, DatasetManagement, DatasetIO, DatasetQuality):
         ...     scale = dataset.get_varied_scale_train(col)
         ...     print(f"{col}: {scale}")
         """
-        return self.varied_scale(self.train_df, column_name)
+        return self.statistics.get_varied_scale(self.train_df, column_name)
     
     def check_varied_scale_train(self, column_name: str, threshold: float):
         """Check if a column has varied scale in the training dataset.
@@ -236,7 +241,7 @@ class Dataset(DatasetStatistics, DatasetManagement, DatasetIO, DatasetQuality):
         ...     if needs_scaling:
         ...         print(f"{col} needs scaling")
         """
-        return self.does_data_have_varied_scale(self.train_df, column_name, threshold)
+        return self.statistics.does_data_have_varied_scale(self.train_df, column_name, threshold)
         
     def __repr__(self):
         return f"Dataset(target_column={self.target_column}, feature_columns={self.feature_columns})"
