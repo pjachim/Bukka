@@ -1,16 +1,15 @@
 from bukka.utils.files import file_manager
 import pyarrow.parquet as pq
 from bukka.utils.bukka_logger import BukkaLogger
-
+from bukka.data_management.dataset_functionality import (
+    DatasetStatistics,
+    DatasetManagement,
+    DatasetIO,
+    DatasetQuality,
+)
 logger = BukkaLogger(__name__)
 
-# Class to handle stats
-class DatasetStatistics:
-    def identify_multicollinearity(self):
-        # Placeholder for multicollinearity identification logic
-        raise NotImplementedError("Multicollinearity identification not implemented.")
-
-class Dataset(DatasetStatistics):
+class Dataset(DatasetStatistics, DatasetManagement, DatasetIO, DatasetQuality):
     """
     Dataset class for managing and splitting datasets for expert systems.
     Args:
@@ -36,18 +35,14 @@ class Dataset(DatasetStatistics):
             self,
             target_column: str,
             file_manager: file_manager.FileManager,
-            dataframe_backend='polars',
             strata=None,
             stratify=True,
             train_size=0.8,
             feature_columns: list[str] | None = None
         ):
-        logger.debug(f"Initializing Dataset with target_column='{target_column}', backend='{dataframe_backend}', train_size={train_size}, stratify={stratify}")
+        logger.debug(f"Initializing Dataset with target_column='{target_column}', train_size={train_size}, stratify={stratify}")
         self.file_manager = file_manager
         self.target_column = target_column
-
-        logger.debug("Setting up dataframe backend")
-        self._set_backend(dataframe_backend)
 
         # If a source dataset was copied into the project by FileManager,
         # attempt to load it into the backend so it can be split. The
@@ -57,11 +52,7 @@ class Dataset(DatasetStatistics):
         dataset_path = getattr(self.file_manager, 'dataset_path', None)
         if dataset_path is not None and dataset_path.exists():
             logger.debug(f"Loading dataset from: {dataset_path}")
-            load_fn = getattr(self.backend, 'load_dataset', None)
-            if callable(load_fn):
-                load_fn(dataset_path)
-            else:
-                logger.debug("Backend does not have load_dataset method, skipping dataset loading")
+            df = self.load_from_file(dataset_path)
         else:
             logger.debug("No dataset path found or dataset does not exist, skipping dataset loading")
 
@@ -73,14 +64,16 @@ class Dataset(DatasetStatistics):
         if stratify is None:
             strata = []
 
-        self.backend.split_dataset(
-            train_path=self.file_manager.train_data_file,
-            test_path=self.file_manager.test_data_file,
+        self.train_df, self.test_df = self.split_dataset(
+            df=df,
             target_column=target_column,
             strata=strata,
             train_size=train_size,
             stratify=stratify
         )
+        self.save_to_parquet(self.train_df, self.file_manager.train_data_file)
+        self.save_to_parquet(self.test_df, self.file_manager.test_data_file)
+
         logger.debug("Dataset split completed")
 
         if feature_columns == None:
@@ -101,25 +94,118 @@ class Dataset(DatasetStatistics):
         logger.debug(f"Schema loaded with {len(self.data_schema)} columns")
         logger.debug("Dataset initialization complete")
 
-    def _set_backend(self, dataframe_backend):
+    
+    def get_train_df(self):
+        """Get the training DataFrame from the backend.
+        
+        Returns
+        -------
+        polars.DataFrame
+            The training DataFrame from the backend.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(...)
+        >>> train_df = dataset.get_train_df()
         """
-        Sets the backend for dataframe operations.
-        Parameters:
-            dataframe_backend (str): The name of the dataframe backend to use. 
-                Currently, only 'polars' is supported.
-        Raises:
-            NotImplementedError: If the specified backend is not supported.
+        return self.backend.train_df
+    
+    def get_test_df(self):
+        """Get the testing DataFrame from the backend.
+        
+        Returns
+        -------
+        polars.DataFrame
+            The testing DataFrame from the backend.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(...)
+        >>> test_df = dataset.get_test_df()
         """
-        logger.debug(f"Setting backend to: {dataframe_backend}")
-        if dataframe_backend == 'polars':
-            from bukka.data_management.wrapper.polars import PolarsOperations
+        return self.backend.test_df
+    
+    def check_missing_values_train(self):
+        """Check for missing values in the training dataset.
+        
+        Returns
+        -------
+        polars.DataFrame
+            DataFrame with columns and their missing value counts.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(...)
+        >>> missing = dataset.check_missing_values_train()
+        """
+        return self.check_missing_values(self.train_df)
+    
+    def identify_multicollinearity_train(self, columns: list[str] = None, threshold: float = 0.8):
+        """Identify multicollinear features in the training dataset.
+        
+        Parameters
+        ----------
+        columns : list[str]
+            List of column names to check for multicollinearity.
+        threshold : float, optional
+            Correlation threshold, by default 0.8.
+        
+        Returns
+        -------
+        list[tuple[str, str, float]]
+            List of tuples with correlated column pairs and their correlation.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(...)
+        >>> pairs = dataset.identify_multicollinearity_train(['feat1', 'feat2'])
+        """
+        if columns is None:
+            columns = self.feature_columns
 
-            self.backend = PolarsOperations()
-            logger.debug("PolarsOperations backend initialized")
-
-        else:
-            logger.error(f"Unsupported backend: {dataframe_backend}")
-            raise NotImplementedError()
+        return self.identify_multicollinearity(self.train_df, columns, threshold)
+    
+    def get_varied_scale_train(self, column_name: str):
+        """Calculate the range of a column in the training dataset.
+        
+        Parameters
+        ----------
+        column_name : str
+            Name of the column to analyze.
+        
+        Returns
+        -------
+        float
+            The range of the column (max - min).
+        
+        Examples
+        --------
+        >>> dataset = Dataset(...)
+        >>> scale = dataset.get_varied_scale_train('price')
+        """
+        return self.varied_scale(self.train_df, column_name)
+    
+    def check_varied_scale_train(self, column_name: str, threshold: float):
+        """Check if a column has varied scale in the training dataset.
+        
+        Parameters
+        ----------
+        column_name : str
+            Name of the column to check.
+        threshold : float
+            The threshold value for determining varied scale.
+        
+        Returns
+        -------
+        bool
+            True if the column's range exceeds the threshold.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(...)
+        >>> has_varied = dataset.check_varied_scale_train('price', 100)
+        """
+        return self.does_data_have_varied_scale(self.train_df, column_name, threshold)
         
     def __repr__(self):
         return f"Dataset(target_column={self.target_column}, feature_columns={self.feature_columns})"
