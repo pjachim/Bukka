@@ -93,52 +93,6 @@ class Dataset(DatasetStatistics, DatasetManagement, DatasetIO, DatasetQuality):
         self.data_schema = {field.name: field.type for field in schema}
         logger.debug(f"Schema loaded with {len(self.data_schema)} columns")
         logger.debug("Dataset initialization complete")
-
-    
-    def get_train_df(self):
-        """Get the training DataFrame from the backend.
-        
-        Returns
-        -------
-        polars.DataFrame
-            The training DataFrame from the backend.
-        
-        Examples
-        --------
-        >>> dataset = Dataset(...)
-        >>> train_df = dataset.get_train_df()
-        """
-        return self.backend.train_df
-    
-    def get_test_df(self):
-        """Get the testing DataFrame from the backend.
-        
-        Returns
-        -------
-        polars.DataFrame
-            The testing DataFrame from the backend.
-        
-        Examples
-        --------
-        >>> dataset = Dataset(...)
-        >>> test_df = dataset.get_test_df()
-        """
-        return self.backend.test_df
-    
-    def check_missing_values_train(self):
-        """Check for missing values in the training dataset.
-        
-        Returns
-        -------
-        polars.DataFrame
-            DataFrame with columns and their missing value counts.
-        
-        Examples
-        --------
-        >>> dataset = Dataset(...)
-        >>> missing = dataset.check_missing_values_train()
-        """
-        return self.check_missing_values(self.train_df)
     
     def identify_multicollinearity_train(self, columns: list[str] = None, threshold: float = 0.8):
         """Identify multicollinear features in the training dataset.
