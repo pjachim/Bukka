@@ -38,8 +38,6 @@ class Dataset:
         File manager instance for data paths.
     target_column : str
         Name of the target column.
-    backend : PolarsOperations
-        Backend operations handler (e.g., PolarsOperations).
     feature_columns : list[str]
         List of feature column names.
     data_schema : dict[str, pyarrow.DataType]
@@ -83,12 +81,6 @@ class Dataset:
         self.file_manager = file_manager
         self.target_column = target_column
 
-        # If a source dataset was copied into the project by FileManager,
-        # attempt to load it into the backend so it can be split. The
-        # backend is expected to expose a `load_dataset(path)` method; if
-        # it does not, skip loading and assume the backend will manage data
-        # itself (this keeps unit tests that monkeypatch the backend working).
-        df = None
         dataset_path = getattr(self.file_manager, 'dataset_path', None)
         if dataset_path is not None and dataset_path.exists():
             logger.debug(f"Loading dataset from: {dataset_path}")
@@ -96,7 +88,6 @@ class Dataset:
         else:
             logger.debug("No dataset path found or dataset does not exist, skipping dataset loading")
 
-        # Always ask the backend to split and write train/test as Parquet files.
         logger.debug(f"Splitting dataset into train/test with train_size={train_size}")
         if strata is None and target_column is None:
             stratify = False

@@ -19,9 +19,9 @@ def create_dummy_dataframe(target_column: str):
 class TestDataset:
     """Unit tests for `src/bukka/data_management/dataset.py`.
 
-    These tests work with the current Dataset API which uses inherited methods
-    from DatasetIO, DatasetManagement, DatasetStatistics, and DatasetQuality.
-    Tests monkeypatch load_from_file to avoid requiring actual dataset files.
+    These tests work with the current Dataset API which uses composition with
+    DatasetIO, DatasetManagement, DatasetStatistics, and DatasetQuality objects.
+    Tests monkeypatch methods on these composition objects to avoid requiring actual dataset files.
     """
 
     def test_init_sets_feature_columns_and_data_schema(self, monkeypatch, tmp_path: Path):
@@ -35,11 +35,12 @@ class TestDataset:
         fm.dataset_path = tmp_path / 'source.csv'
         fm.dataset_path.touch()
 
-        # Import Dataset and monkeypatch load_from_file to return test data
+        # Import Dataset and monkeypatch DatasetIO.load_from_file to return test data
         from bukka.data_management.dataset import Dataset
+        from bukka.data_management.dataset_functionality import DatasetIO
         
         test_df = create_dummy_dataframe('target')
-        monkeypatch.setattr(Dataset, 'load_from_file', lambda self, path: test_df)
+        monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path: test_df)
 
         dset = Dataset(target_column='target', file_manager=fm, train_size=0.5)
 
@@ -62,9 +63,10 @@ class TestDataset:
         fm.dataset_path.touch()
 
         from bukka.data_management.dataset import Dataset
+        from bukka.data_management.dataset_functionality import DatasetIO
         
         test_df = create_dummy_dataframe('target')
-        monkeypatch.setattr(Dataset, 'load_from_file', lambda self, path: test_df)
+        monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path: test_df)
 
         dset = Dataset(target_column='target', file_manager=fm, train_size=0.5)
 
@@ -83,9 +85,10 @@ class TestDataset:
         fm.dataset_path.touch()
 
         from bukka.data_management.dataset import Dataset
+        from bukka.data_management.dataset_functionality import DatasetIO
         
         test_df = create_dummy_dataframe('target')
-        monkeypatch.setattr(Dataset, 'load_from_file', lambda self, path: test_df)
+        monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path: test_df)
 
         # Provide explicit feature columns
         dset = Dataset(
