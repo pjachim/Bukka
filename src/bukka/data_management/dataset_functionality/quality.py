@@ -4,6 +4,8 @@ class DatasetQuality:
     """
     Class for assessing dataset quality.
     """
+    def __init__(self):
+        pass
 
     def check_missing_values(self, df: pl.DataFrame) -> pl.DataFrame:
         """Check for missing values in the DataFrame.

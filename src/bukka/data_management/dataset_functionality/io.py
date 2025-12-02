@@ -7,6 +7,9 @@ class DatasetIO:
     This class provides methods for loading and saving datasets in various
     formats including CSV and Parquet.
     """
+    def __init__(self):
+        pass
+
     def load_from_csv(self, file_path: str, pl_kwargs: dict | None = None) -> pl.DataFrame:
         """Load dataset from a CSV file.
         
@@ -159,5 +162,8 @@ class DatasetIO:
         """
         if pl_kwargs is None:
             pl_kwargs = {}
+        
+        # Ensure parent directory exists
+        Path(file_path).parent.mkdir(parents=True, exist_ok=True)
         
         df.write_parquet(file_path, **(pl_kwargs or {}))

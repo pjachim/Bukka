@@ -4,6 +4,8 @@ class DatasetManagement:
     """
     Class for managing dataset functionalities.
     """
+    def __init__(self):
+        pass
 
     def split_dataset(self, df: pl.DataFrame, target_column: str, train_size=0.8, strata: list[str] | None = None, stratify: bool = True, target_dataframe: pl.DataFrame | None = None) -> tuple[pl.DataFrame, pl.DataFrame] :
         """Split the dataset into training and testing sets.
@@ -38,8 +40,8 @@ class DatasetManagement:
         >>> len(test_df)
         2
         """
-        shuffled_df = df.sample(frac=1.0, with_replacement=False)
+        shuffled_df = df.sample(fraction=1.0, with_replacement=False)
         train_df = shuffled_df.head(int(len(shuffled_df) * train_size))
         test_df = shuffled_df.tail(len(shuffled_df) - len(train_df))
-        
+
         return train_df, test_df

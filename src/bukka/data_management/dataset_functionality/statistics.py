@@ -6,6 +6,8 @@ class DatasetStatistics:
     This class provides methods for analyzing correlations, outliers,
     scale variations, and basic descriptive statistics.
     """
+    def __init__(self):
+        pass
     
     def identify_multicollinearity(self, df, columns, threshold=0.8):
         """Identify pairs of columns with high correlation.
