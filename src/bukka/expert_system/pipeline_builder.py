@@ -20,16 +20,16 @@ class PipelineBuilder:
     checks to extract import strings, instantiation text and step names.
     """
 
-    def __init__(self, dataset, target_column) -> None:
+    def __init__(self, dataset, target_column, problem_type: str = "auto") -> None:
         """Create a `PipelineBuilder`.
 
         Args:
-            problem_identifier: An instance of `ProblemIdentifier` that
-                exposes `problems_to_solve` and `ml_problem` with
-                candidate `solutions`.
+            dataset: Dataset instance to analyze.
+            target_column: Name of the target column.
+            problem_type: ML problem type specification (default: 'auto').
         """
         self.problem_identifier = ProblemIdentifier(
-            dataset, target_column
+            dataset, target_column, problem_type=problem_type
         )
         self.problem_identifier.identify_problems()
         

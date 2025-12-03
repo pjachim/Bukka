@@ -70,21 +70,33 @@ class Dataset:
             strata=None,
             stratify=True,
             train_size=0.8,
-            feature_columns: list[str] | None = None
+            feature_columns: list[str] | None = None,
+            backend: str = "polars"
         ):
         self.io = DatasetIO()
         self.management = DatasetManagement()
         self.statistics = DatasetStatistics()
         self.quality = DatasetQuality()
 
-        logger.debug(f"Initializing Dataset with target_column='{target_column}', train_size={train_size}, stratify={stratify}")
+        logger.debug(f"Initializing Dataset with target_column='{target_column}', train_size={train_size}, stratify={stratify}, backend='{backend}'")
         self.file_manager = file_manager
         self.target_column = target_column
+        self.backend = backend
 
         dataset_path = getattr(self.file_manager, 'dataset_path', None)
         if dataset_path is not None and dataset_path.exists():
             logger.debug(f"Loading dataset from: {dataset_path}")
             df = self.io.load_from_file(dataset_path)
+            
+            # Validate target column exists in the dataset
+            if target_column and target_column not in df.columns:
+                available_cols = ', '.join(df.columns[:10])  # Show first 10 columns
+                if len(df.columns) > 10:
+                    available_cols += f", ... ({len(df.columns)} total)"
+                raise ValueError(
+                    f"Target column '{target_column}' not found in dataset. "
+                    f"Available columns: {available_cols}"
+                )
         else:
             logger.debug("No dataset path found or dataset does not exist, skipping dataset loading")
 
@@ -110,7 +122,7 @@ class Dataset:
         if feature_columns == None:
             logger.debug("Auto-detecting feature columns from training data")
             self.feature_columns = list(self.train_df.columns)
-            if target_column:
+            if target_column and target_column in self.feature_columns:
                 self.feature_columns.remove(target_column)
             logger.debug(f"Detected {len(self.feature_columns)} feature columns")
         

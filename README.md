@@ -9,7 +9,11 @@
   * **Django-Inspired Structure:** Creates a logical, maintainable folder hierarchy optimized for ML workflows (data, models, notebooks, scripts).
   * **Automated Environment Setup:** Automatically generates a Python virtual environment (`.venv`) to isolate your project dependencies.
   * **Dependency Management:** Creates a starting **`requirements.txt`** file with essential ML packages (e.g., NumPy, Pandas, Scikit-learn).
-  * **CLI Simplicity:** Use simple, intuitive commands to create a complete project skeleton in seconds.
+  * **YAML Configuration:** Use configuration files for complex project setups with `init-config` command.
+  * **Multiple Backends:** Support for various dataframe backends via narwhals (polars, pandas, modin, cudf, dask, pyarrow).
+  * **Problem Type Detection:** Automatic ML problem identification or explicit specification (classification, regression, clustering).
+  * **Intelligent Pipeline Generation:** Automatically generates ML pipelines based on dataset analysis.
+  * **CLI Simplicity:** Use simple, intuitive commands with subcommands to create a complete project skeleton in seconds.
 
 -----
 
@@ -25,48 +29,146 @@ pip install bukka
 
 ### 2\. Creating a New Project
 
-Use `bukka` command, similar to Django, followed by your desired project name.
+Use the `bukka run` command with your desired project name and dataset.
 
 ```bash
 # Example: Create a new project named 'titanic'
-python -m bukka -n titanic -d titanic.csv
+python -m bukka run --name titanic --dataset titanic.csv --target Survived
+```
+
+Or use the shorthand options:
+
+```bash
+python -m bukka run -n titanic -d titanic.csv -t Survived
+```
+
+### 3\. Using Configuration Files
+
+For complex projects, create a YAML configuration template:
+
+```bash
+# Generate a config template
+python -m bukka init-config
+
+# Edit bukka_config.yaml with your settings, then run:
+python -m bukka run --config bukka_config.yaml
+```
+
+### 4\. Advanced Options
+
+```bash
+# Specify backend and problem type
+python -m bukka run -n my_project -d data.csv -t label \
+  --backend pandas --problem-type regression
+
+# Custom train/test split
+python -m bukka run -n my_project -d data.csv -t target --train-size 0.7
+
+# Skip virtual environment creation
+python -m bukka run -n my_project -d data.csv --skip-venv
 ```
 
 This command will:
 
-1.  Create the folder in the root directort: `titanic/`
+1.  Create the project folder: `titanic/`
 2.  Create and configure a virtual environment: `titanic/.venv/`
 3.  Generate the initial dependency file: `titanic/requirements.txt`
-4.  Install the packages in the requirements.txt.
-5.  Copy the data file to your data folder.
-6.  Split the dataset into a training and test set.
-7.  Provides a reasonable pipelines based on an adhoc scan of your dataset.
-8.  Provide placeholder utility classes you can customize for your project.
-9. Provide starter notebooks, so you can get to machine learning ASAP.
+4.  Install the packages in the requirements.txt
+5.  Copy the data file to your data folder
+6.  Split the dataset into training and test sets
+7.  Analyze your dataset and generate pipelines based on detected problems
+8.  Provide placeholder utility classes you can customize
+9.  Provide starter notebooks, so you can get to machine learning ASAP
 
-(Coming soon, the command will also do the following):
+(Coming soon):
 
-10. Initialize MLFlow to track your parameters and results.
-11. Provide a few baseline models you can compare to, e.g. using random guessing.
+10. Initialize MLFlow to track your parameters and results
+11. Provide baseline models for comparison (e.g., random guessing)
 
 ## 🌳 Standard Project Structure
 
-When you run `python -m bukka -n <name>`, the following standardized structure is created, ensuring consistency across all your ML projects:
+When you run `python -m bukka run --name <name>`, the following standardized structure is created, ensuring consistency across all your ML projects:
 
 ```
 <project_name>/
 ├── .venv/                         # Isolated Python Virtual Environment
 ├── data/                          # Storage for raw, processed, and external data
-│   ├── test/                      # Unprocessed, immutable source data
-│   ├── train/                     # Cleaned and processed data ready for modeling
-├── pipelines/                     # Pipelines
+│   ├── <dataset_name>             # Original dataset copy
+│   ├── test/                      # Test split data
+│   └── train/                     # Training split data
+├── pipelines/                     # ML Pipelines
 │   ├── __init__.py                # Makes 'pipelines' a Python package
-│   ├── baseline/                  # Placeholder, this will store pipelines that provide baselines (e.g. naive classifiers)
-│   ├── candidate/                 # Contender pipelines
-│   ├── generated/                 # Placeholder, this will contain pipelines generated by the schema analyzer.
-├── utils/                       # Python scripts for automation (currently empty)
-├── requirements.txt               # Project dependencies file
+│   ├── baseline/                  # Baseline pipelines (e.g. naive classifiers)
+│   ├── candidate/                 # Your custom pipelines
+│   └── generated/                 # Auto-generated pipelines from dataset analysis
+├── notebooks/                     # Jupyter notebooks for experimentation
+│   └── starter_notebook.ipynb     # Pre-configured notebook to get started
+├── utils/                         # Custom utility classes and functions
+├── pyproject.toml                 # Project metadata and dependencies
+└── requirements.txt               # Dependency list for pip
 ```
+
+## 📋 CLI Commands
+
+### Available Commands
+
+```bash
+python -m bukka --help                    # Show all available commands
+python -m bukka init-config --help        # Help for config template generation
+python -m bukka run --help                # Help for project creation
+```
+
+### Create Configuration Template
+
+```bash
+python -m bukka init-config                         # Creates bukka_config.yaml
+python -m bukka init-config --output my_config.yaml # Custom output path
+```
+
+### Create Project
+
+**Basic Usage:**
+```bash
+python -m bukka run --name PROJECT_NAME --dataset DATA.csv --target TARGET_COLUMN
+```
+
+**Configuration File:**
+```bash
+python -m bukka run --config bukka_config.yaml
+```
+
+**Advanced Options:**
+
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--name` | `-n` | Project name/directory | Required* |
+| `--dataset` | `-d` | Path to dataset file | Optional |
+| `--target` | `-t` | Target column name | Optional |
+| `--config` | `-c` | YAML config file path | None |
+| `--backend` | `-b` | Dataframe backend | `polars` |
+| `--problem-type` | `-p` | ML problem type | `auto` |
+| `--train-size` | | Train/test split ratio | `0.8` |
+| `--skip-venv` | `-sv` | Skip venv creation | `False` |
+| `--stratify` | | Enable stratified split | `True` |
+| `--no-stratify` | | Disable stratified split | - |
+| `--strata` | | Stratification columns | None |
+
+\* Required unless using `--config`
+
+**Supported Backends:**
+- `polars` (default)
+- `pandas`
+- `modin`
+- `cudf`
+- `dask`
+- `pyarrow`
+
+**Problem Types:**
+- `auto` (default - automatic detection)
+- `binary_classification`
+- `multiclass_classification`
+- `regression`
+- `clustering`
 
 -----
 
