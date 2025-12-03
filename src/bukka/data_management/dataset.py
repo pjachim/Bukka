@@ -233,6 +233,147 @@ class Dataset:
         ...         print(f"{col} needs scaling")
         """
         return self.statistics.does_data_have_varied_scale(self.train_df, column_name, threshold)
+    
+    def get_column_null_count(self, column: str) -> int:
+        """Get the count of null values in a column from the training dataset.
+        
+        Parameters
+        ----------
+        column : str
+            Name of the column to check.
+        
+        Returns
+        -------
+        int
+            The count of null values in the column.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(target_column='label', file_manager=fm)
+        >>> null_count = dataset.get_column_null_count('age')
+        >>> print(null_count)
+        5
+        """
+        return self.quality.get_column_null_count(self.train_df, column)
+    
+    def type_of_column(self, column: str) -> str:
+        """Get the simplified data type of a column from the training dataset.
+        
+        Parameters
+        ----------
+        column : str
+            Name of the column to check.
+        
+        Returns
+        -------
+        str
+            The simplified data type: 'int', 'float', 'string', or polars type name.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(target_column='label', file_manager=fm)
+        >>> dtype = dataset.type_of_column('age')
+        >>> print(dtype)
+        'int'
+        """
+        return self.quality.type_of_column(self.train_df, column)
+    
+    def has_outliers(self, column: str, z_threshold: float = 3) -> bool:
+        """Check if a column has outliers in the training dataset.
+        
+        Parameters
+        ----------
+        column : str
+            Name of the column to check.
+        z_threshold : float, optional
+            Number of standard deviations from mean to consider as outlier.
+            Defaults to 3.
+        
+        Returns
+        -------
+        bool
+            True if outliers are detected, False otherwise.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(target_column='label', file_manager=fm)
+        >>> has_outliers = dataset.has_outliers('price')
+        >>> print(has_outliers)
+        True
+        """
+        return self.statistics.has_outliers(self.train_df, column, z_threshold)
+    
+    def get_unq_count(self, column: str) -> int:
+        """Get the count of unique values in a column from the training dataset.
+        
+        Parameters
+        ----------
+        column : str
+            Name of the column to analyze.
+        
+        Returns
+        -------
+        int
+            The number of unique values in the column.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(target_column='label', file_manager=fm)
+        >>> unique_count = dataset.get_unq_count('category')
+        >>> print(unique_count)
+        5
+        """
+        return self.statistics.get_unq_count(self.train_df, column)
+    
+    def has_inconsistent_categorical_data(self, column: str, threshold: float = 0.1) -> bool:
+        """Check if a categorical column has inconsistent data in the training dataset.
+        
+        Parameters
+        ----------
+        column : str
+            Name of the column to check.
+        threshold : float, optional
+            Threshold for unique value ratio. Defaults to 0.1.
+        
+        Returns
+        -------
+        bool
+            True if inconsistent categorical data is detected, False otherwise.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(target_column='label', file_manager=fm)
+        >>> is_inconsistent = dataset.has_inconsistent_categorical_data('category')
+        >>> print(is_inconsistent)
+        True
+        """
+        return self.quality.has_inconsistent_categorical_data(self.train_df, column, threshold)
+    
+    def has_multicollinearity(self, columns: list[str] | None = None, threshold: float = 0.8) -> bool:
+        """Check if the training dataset has multicollinearity among columns.
+        
+        Parameters
+        ----------
+        columns : list[str], optional
+            List of column names to check. If None, uses feature_columns.
+        threshold : float, optional
+            Correlation threshold for detecting multicollinearity. Defaults to 0.8.
+        
+        Returns
+        -------
+        bool
+            True if any pair of columns has correlation above threshold.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(target_column='label', file_manager=fm)
+        >>> has_multi = dataset.has_multicollinearity()
+        >>> print(has_multi)
+        True
+        """
+        if columns is None:
+            columns = self.feature_columns
+        return self.statistics.does_data_have_multicollinearity(self.train_df, columns, threshold)
         
     def __repr__(self):
         return f"Dataset(target_column={self.target_column}, feature_columns={self.feature_columns})"

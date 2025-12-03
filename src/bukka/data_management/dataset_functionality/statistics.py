@@ -141,6 +141,59 @@ class DatasetStatistics:
         outliers = col.filter((pl.col(column_name) - mean).abs() > z_threshold * std_dev)
         return outliers.height > 0
     
+    def has_outliers(self, df, column_name, z_threshold=3):
+        """Detect outliers using z-score method (alias for does_data_have_outliers).
+        
+        Parameters
+        ----------
+        df : polars.DataFrame
+            The input DataFrame.
+        column_name : str
+            Name of the column to check for outliers.
+        z_threshold : float, optional
+            Number of standard deviations from the mean beyond which
+            values are considered outliers, by default 3.
+        
+        Returns
+        -------
+        bool
+            True if outliers are detected, False otherwise.
+        
+        Examples
+        --------
+        >>> import polars as pl
+        >>> df = pl.DataFrame({'values': [1, 2, 3, 4, 100]})
+        >>> stats = DatasetStatistics()
+        >>> stats.has_outliers(df, 'values')
+        True
+        """
+        return self.does_data_have_outliers(df, column_name, z_threshold)
+    
+    def get_unq_count(self, df, column_name):
+        """Get the count of unique values in a column.
+        
+        Parameters
+        ----------
+        df : polars.DataFrame
+            The input DataFrame.
+        column_name : str
+            Name of the column to analyze.
+        
+        Returns
+        -------
+        int
+            The number of unique values in the column.
+        
+        Examples
+        --------
+        >>> import polars as pl
+        >>> df = pl.DataFrame({'values': [1, 2, 2, 3, 3, 3]})
+        >>> stats = DatasetStatistics()
+        >>> stats.get_unq_count(df, 'values')
+        3
+        """
+        return df.select(pl.col(column_name).n_unique()).item()
+    
     def does_data_have_multicollinearity(self, df, columns, threshold=0.8):
         """Check if the dataset has multicollinearity among columns.
         

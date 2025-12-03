@@ -103,8 +103,7 @@ class Project:
         logger.info("Creating Dataset instance")
         dataset = Dataset(
             target_column, 
-            self.file_manager, 
-            dataframe_backend, 
+            self.file_manager,
             strata=strata,
             stratify=stratify
         )
