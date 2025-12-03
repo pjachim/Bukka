@@ -52,7 +52,7 @@ class TestCLIIntegration:
 
         template = textwrap.dedent(
             f"""
-            from bukka.logistics.environment.environment import EnvironmentBuilder
+            from bukka.environment.environment import EnvironmentBuilder
             EnvironmentBuilder.build_environment = lambda self: None
 
             # Patch Dataset.__init__ so the Polars backend reads the CSV and
@@ -64,6 +64,12 @@ class TestCLIIntegration:
             import pyarrow.parquet as pq
 
             def _patched_init(self, target_column, file_manager, dataframe_backend='polars', strata=None, stratify=True, train_size=0.8, feature_columns=None):
+                # Initialize required Dataset attributes
+                from bukka.data_management.dataset_functionality import DatasetIO, DatasetManagement, DatasetStatistics, DatasetQuality
+                self.io = DatasetIO()
+                self.management = DatasetManagement()
+                self.statistics = DatasetStatistics()
+                self.quality = DatasetQuality()
                 self.file_manager = file_manager
                 self.target_column = target_column
                 self.backend = PolarsOperations()
@@ -75,18 +81,25 @@ class TestCLIIntegration:
                 test_file = self.file_manager.test_data / 'test.parquet'
                 # Use backend splitting which will write parquet files
                 self.backend.split_dataset(train_path=train_file, test_path=test_file, target_column=target_column, strata=strata, train_size=train_size, stratify=stratify)
-                # Build a minimal train_df proxy exposing get_column_names()
+                # Build a minimal train_df proxy exposing get_column_names() and schema
                 class _DFProxy:
-                    def __init__(self, cols):
+                    def __init__(self, cols, schema_dict):
                         self._cols = cols
+                        self.schema = schema_dict
                     def get_column_names(self):
                         return list(self._cols)
 
                 try:
-                    cols = [f.name for f in pq.read_schema(train_file)]
+                    schema = pq.read_schema(train_file)
+                    cols = [f.name for f in schema]
+                    schema_dict = {{f.name: f.type for f in schema}}
                 except Exception:
                     cols = []
-                self.backend.train_df = _DFProxy(cols)
+                    schema_dict = {{}}
+                self.backend.train_df = _DFProxy(cols, schema_dict)
+                # Set train_df and test_df on Dataset itself
+                self.train_df = self.backend.train_df
+                self.test_df = None
                 if feature_columns is None:
                     if target_column in cols:
                         self.feature_columns = [c for c in cols if c != target_column]
@@ -96,9 +109,9 @@ class TestCLIIntegration:
                     self.feature_columns = feature_columns
                 try:
                     schema = pq.read_schema(train_file)
-                    self.data_schema = {field.name: field.type for field in schema}
+                    self.data_schema = {{field.name: field.type for field in schema}}
                 except Exception:
-                    self.data_schema = {}
+                    self.data_schema = {{}}
 
             ds_module.Dataset.__init__ = _patched_init
 
@@ -106,7 +119,7 @@ class TestCLIIntegration:
             from bukka.expert_system import problem_identifier as pid_mod
             pid_mod.ProblemIdentifier.multivariate_problems = lambda self: None
             pid_mod.ProblemIdentifier.univariate_problems = lambda self: None
-            pid_mod.ProblemIdentifier._identify_ml_problem = lambda self: None
+            pid_mod.ProblemIdentifier.identify_ml_problem = lambda self: None
 
             from bukka.__main__ import main
             main(name={repr(str(proj_path))}, dataset={repr(str(csv_path))}, target='target')
@@ -124,7 +137,7 @@ class TestCLIIntegration:
         """
 
         stub_code = textwrap.dedent(
-            """
+            f"""
             import sys, types, runpy
 
             # Minimal sklearn stub modules and classes
@@ -157,6 +170,24 @@ class TestCLIIntegration:
                     pass
             linear.LogisticRegression = LogisticRegression
             sys.modules['sklearn.linear_model'] = linear
+
+            compose = types.ModuleType('sklearn.compose')
+            class ColumnTransformer:
+                def __init__(self, *a, **k):
+                    pass
+            compose.ColumnTransformer = ColumnTransformer
+            sys.modules['sklearn.compose'] = compose
+
+            preprocessing = types.ModuleType('sklearn.preprocessing')
+            class StandardScaler:
+                def __init__(self, *a, **k):
+                    pass
+            class OneHotEncoder:
+                def __init__(self, *a, **k):
+                    pass
+            preprocessing.StandardScaler = StandardScaler
+            preprocessing.OneHotEncoder = OneHotEncoder
+            sys.modules['sklearn.preprocessing'] = preprocessing
 
             # Execute the pipeline file
             runpy.run_path({repr(str(pipeline_path))}, run_name='__main__')
@@ -223,7 +254,7 @@ class TestCLIIntegration:
             f"""
             import runpy, sys
             # Apply same patches as before
-            from bukka.logistics.environment.environment import EnvironmentBuilder
+            from bukka.environment.environment import EnvironmentBuilder
             EnvironmentBuilder.build_environment = lambda self: None
             from bukka.data_management import dataset as ds_module
             from bukka.data_management.wrapper.polars import PolarsOperations
@@ -231,6 +262,12 @@ class TestCLIIntegration:
             import pyarrow.parquet as pq
 
             def _patched_init(self, target_column, file_manager, dataframe_backend='polars', strata=None, stratify=True, train_size=0.8, feature_columns=None):
+                # Initialize required Dataset attributes
+                from bukka.data_management.dataset_functionality import DatasetIO, DatasetManagement, DatasetStatistics, DatasetQuality
+                self.io = DatasetIO()
+                self.management = DatasetManagement()
+                self.statistics = DatasetStatistics()
+                self.quality = DatasetQuality()
                 self.file_manager = file_manager
                 self.target_column = target_column
                 self.backend = PolarsOperations()
@@ -242,15 +279,22 @@ class TestCLIIntegration:
                 test_file = self.file_manager.test_data / 'test.parquet'
                 self.backend.split_dataset(train_path=train_file, test_path=test_file, target_column=target_column, strata=strata, train_size=train_size, stratify=stratify)
                 class _DFProxy:
-                    def __init__(self, cols):
+                    def __init__(self, cols, schema_dict):
                         self._cols = cols
+                        self.schema = schema_dict
                     def get_column_names(self):
                         return list(self._cols)
                 try:
-                    cols = [f.name for f in pq.read_schema(train_file)]
+                    schema = pq.read_schema(train_file)
+                    cols = [f.name for f in schema]
+                    schema_dict = {{f.name: f.type for f in schema}}
                 except Exception:
                     cols = []
-                self.backend.train_df = _DFProxy(cols)
+                    schema_dict = {{}}
+                self.backend.train_df = _DFProxy(cols, schema_dict)
+                # Set train_df and test_df on Dataset itself
+                self.train_df = self.backend.train_df
+                self.test_df = None
                 if feature_columns is None:
                     if target_column in cols:
                         self.feature_columns = [c for c in cols if c != target_column]
@@ -260,18 +304,18 @@ class TestCLIIntegration:
                     self.feature_columns = feature_columns
                 try:
                     schema = pq.read_schema(train_file)
-                    self.data_schema = {field.name: field.type for field in schema}
+                    self.data_schema = {{field.name: field.type for field in schema}}
                 except Exception:
-                    self.data_schema = {}
+                    self.data_schema = {{}}
 
             ds_module.Dataset.__init__ = _patched_init
             from bukka.expert_system import problem_identifier as pid_mod
             pid_mod.ProblemIdentifier.multivariate_problems = lambda self: None
             pid_mod.ProblemIdentifier.univariate_problems = lambda self: None
-            pid_mod.ProblemIdentifier._identify_ml_problem = lambda self: None
+            pid_mod.ProblemIdentifier.identify_ml_problem = lambda self: None
 
             # Simulate CLI args and run module as __main__
-            sys.argv = ['-m', 'bukka', '--name', {repr(str(proj))}, '--dataset', {repr(str(csv))}, '--target', 'target']
+            sys.argv = ['bukka', '--name', {repr(str(proj))}, '--dataset', {repr(str(csv))}, '--target', 'target']
             runpy.run_module('bukka', run_name='__main__')
             """
         )

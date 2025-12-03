@@ -36,13 +36,21 @@ class ProblemIdentifier:
         strong correlations and appends `Problem` instances (with
         suggested solutions) to `self.problems_to_solve`.
         """
-        #if self.dataset.backend.has_multicollinearity():
-        #    problem = Problem(
-        #        problem_name="Multicollinearity",
-        #        description="The dataset contains multicollinear features.",
-        #        solutions=[sol.multivariate_solutions.remove_multicollinear_features]
-        #    )
-        #    self.problems_to_solve.add_problem(problem)
+        if self.dataset.has_multicollinearity():
+            # Check if multivariate_solutions module exists
+            if hasattr(sol, 'multivariate_solutions') and hasattr(sol.multivariate_solutions, 'remove_multicollinear_features'):
+                solutions = [sol.multivariate_solutions.remove_multicollinear_features]
+            else:
+                solutions = []
+            
+            problem = Problem(
+                problem_name="Multicollinearity",
+                description="The dataset contains multicollinear features.",
+                solutions=solutions,
+                features=[],
+                problem_type="transformer"
+            )
+            self.problems_to_solve.add_problem(problem)
 
     def univariate_problems(self) -> None:
         """Inspect each feature for univariate problems.
@@ -60,7 +68,7 @@ class ProblemIdentifier:
             feature: Name of the feature/column to inspect.
         """
         # Identify null/missing value problems
-        if self.dataset.backend.get_column_null_count(feature):
+        if self.dataset.get_column_null_count(feature):
             problem = Problem(
                 problem_name="Null Values",
                 description=f"The feature '{feature}' contains null values.",
@@ -74,8 +82,8 @@ class ProblemIdentifier:
             self.problems_to_solve.add_problem(problem)
 
         # Numeric-type specific checks (outliers)
-        if self.dataset.backend.type_of_column(feature) in ["int", "float"]:
-            if self.dataset.backend.has_outliers(feature):
+        if self.dataset.type_of_column(feature) in ["int", "float"]:
+            if self.dataset.has_outliers(feature):
                 problem = Problem(
                     problem_name="Outliers",
                     description=f"The feature '{feature}' contains outlier values.",
@@ -89,8 +97,8 @@ class ProblemIdentifier:
                 self.problems_to_solve.add_problem(problem)
 
         # String/categorical-type specific checks
-        if self.dataset.backend.type_of_column(feature) == "string":
-            if self.dataset.backend.has_inconsistent_categorical_data(feature):
+        if self.dataset.type_of_column(feature) == "string":
+            if self.dataset.has_inconsistent_categorical_data(feature):
                 problem = Problem(
                     problem_name="Inconsistent Categorical Data",
                     description=f"The feature '{feature}' contains inconsistent categorical data.",
@@ -114,8 +122,8 @@ class ProblemIdentifier:
                 problem_type="model",
             )
             return
-        elif self.dataset.backend.type_of_column(self.target_column) in ["int", "float"]:
-            if self.dataset.backend.get_unq_count(self.target_column) > 20:
+        elif self.dataset.type_of_column(self.target_column) in ["int", "float"]:
+            if self.dataset.get_unq_count(self.target_column) > 20:
                 self.ml_problem = Problem(
                     problem_name="Regression",
                     description="The target variable is continuous.",
@@ -125,7 +133,7 @@ class ProblemIdentifier:
                 )
         
         # This means classification, as target is not None and not regression. Now let's see if it's binary or multi-class.
-        if self.dataset.backend.get_unq_count(self.target_column) == 2:
+        if self.dataset.get_unq_count(self.target_column) == 2:
             self.ml_problem = Problem( 
                 problem_name="Binary Classification",
                 description="The target variable has two distinct classes.",
