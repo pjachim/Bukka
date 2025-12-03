@@ -183,9 +183,13 @@ class ConfigValidator:
         if not name or not name.strip():
             raise ValueError("Project name cannot be empty")
         
-        # Check for potentially problematic characters
+        # Extract basename if it's a path (to allow absolute paths)
+        from pathlib import Path
+        basename = Path(name).name if ('/' in name or '\\' in name) else name
+        
+        # Check for potentially problematic characters in the basename only
         invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
-        if any(char in name for char in invalid_chars):
+        if any(char in basename for char in invalid_chars):
             raise ValueError(
                 f"Project name contains invalid characters. "
                 f"Avoid: {', '.join(invalid_chars)}"

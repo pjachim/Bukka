@@ -29,11 +29,11 @@ def create_config_template(args: argparse.Namespace) -> None:
     try:
         created_path = ConfigManager.create_template(output_path)
         logger.info(f"Configuration template created: {created_path}", format_level="h3")
-        print(f"✓ Configuration template created at: {created_path}")
+        print(f"[OK] Configuration template created at: {created_path}")
         print(f"\nEdit this file and run: python -m bukka run --config {created_path}")
     except Exception as e:
         logger.error(f"Failed to create config template: {e}")
-        print(f"✗ Error: {e}", file=sys.stderr)
+        print(f"[ERROR] {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -83,14 +83,12 @@ def validate_cli_args(args: argparse.Namespace) -> None:
     except ValueError as e:
         errors.append(str(e))
     
-    if errors:
-        logger.error("Validation errors found:")
-        for error in errors:
-            logger.error(f"  - {error}")
-            print(f"✗ {error}", file=sys.stderr)
-        sys.exit(1)
-
-
+        if errors:
+            logger.error("Validation errors found:")
+            for error in errors:
+                logger.error(f"  - {error}")
+                print(f"[ERROR] {error}", file=sys.stderr)
+            sys.exit(1)
 def run_project(args: argparse.Namespace) -> None:
     """Run the main project creation workflow.
     
@@ -115,8 +113,8 @@ def run_project(args: argparse.Namespace) -> None:
             strata = config['data']['strata']
             
         except (FileNotFoundError, ValueError) as e:
-            logger.error(f"Config error: {e}")
-            print(f"✗ Configuration error: {e}", file=sys.stderr)
+            logger.error(f"Configuration error: {e}")
+            print(f"[ERROR] Configuration error: {e}", file=sys.stderr)
             sys.exit(1)
     else:
         # Use CLI arguments directly
@@ -163,14 +161,14 @@ def run_project(args: argparse.Namespace) -> None:
         proj.run()
         
         print(f"\n{'='*60}")
-        print(f"✓ Project '{name}' created successfully!")
+        print(f"[OK] Project '{name}' created successfully!")
         print(f"{'='*60}")
         if dataset:
-            print(f"\n📊 Dataset: {dataset}")
-            print(f"🎯 Target: {target or 'auto-detect'}")
-            print(f"🔧 Backend: {backend}")
-            print(f"🤖 Problem: {problem_type}")
-        print(f"\n📁 Project location: {Path(name).absolute()}")
+            print(f"\nDataset: {dataset}")
+            print(f"Target: {target or 'auto-detect'}")
+            print(f"Backend: {backend}")
+            print(f"Problem: {problem_type}")
+        print(f"\nProject location: {Path(name).absolute()}")
         print(f"\nNext steps:")
         print(f"  1. cd {name}")
         if not skip_venv:
@@ -185,7 +183,7 @@ def run_project(args: argparse.Namespace) -> None:
         
     except Exception as e:
         logger.error(f"Failed to create project: {e}")
-        print(f"\n✗ Error creating project: {e}", file=sys.stderr)
+        print(f"\n[ERROR] Error creating project: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
         sys.exit(1)
@@ -279,13 +277,13 @@ For more information, visit: https://github.com/pjachim/Bukka
         '--backend', '-b',
         type=str,
         choices=SUPPORTED_BACKENDS,
-        default='polars',
-        help=f'Dataframe backend (default: polars). Supported: {", ".join(SUPPORTED_BACKENDS)}'
+        default=None,
+        help=f'Dataframe backend (default: polars). Supported: {', '.join(SUPPORTED_BACKENDS)}'
     )
     data_group.add_argument(
         '--train-size',
         type=float,
-        default=0.8,
+        default=None,
         help='Train/test split ratio (default: 0.8)'
     )
     data_group.add_argument(
@@ -313,8 +311,8 @@ For more information, visit: https://github.com/pjachim/Bukka
         '--problem-type', '-p',
         type=str,
         choices=PROBLEM_TYPES,
-        default='auto',
-        help=f'ML problem type (default: auto). Options: {", ".join(PROBLEM_TYPES)}'
+        default=None,
+        help=f'ML problem type (default: auto). Options: {', '.join(PROBLEM_TYPES)}'
     )
     
     # Parse arguments

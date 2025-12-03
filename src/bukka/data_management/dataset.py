@@ -70,16 +70,18 @@ class Dataset:
             strata=None,
             stratify=True,
             train_size=0.8,
-            feature_columns: list[str] | None = None
+            feature_columns: list[str] | None = None,
+            backend: str = "polars"
         ):
         self.io = DatasetIO()
         self.management = DatasetManagement()
         self.statistics = DatasetStatistics()
         self.quality = DatasetQuality()
 
-        logger.debug(f"Initializing Dataset with target_column='{target_column}', train_size={train_size}, stratify={stratify}")
+        logger.debug(f"Initializing Dataset with target_column='{target_column}', train_size={train_size}, stratify={stratify}, backend='{backend}'")
         self.file_manager = file_manager
         self.target_column = target_column
+        self.backend = backend
 
         dataset_path = getattr(self.file_manager, 'dataset_path', None)
         if dataset_path is not None and dataset_path.exists():

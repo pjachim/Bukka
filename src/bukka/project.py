@@ -165,7 +165,8 @@ class Project:
             self.file_manager,
             strata=strata,
             stratify=stratify,
-            train_size=self.train_size
+            train_size=self.train_size,
+            backend=dataframe_backend
         )
         logger.debug("Dataset instance created")
         builder = PipelineBuilder(dataset, target_column, problem_type=self.problem_type)
