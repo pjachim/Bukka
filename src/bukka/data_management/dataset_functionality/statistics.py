@@ -40,12 +40,21 @@ class DatasetStatistics:
         >>> pairs = stats.identify_multicollinearity(df, ['a', 'b', 'c'])
         >>> # Returns pairs where abs(correlation) > 0.8
         """
-        df.correlation_matrix = df[columns].corr()
+        # Filter to only numeric columns to avoid TypeError with string columns
+        import polars as pl
+        numeric_columns = [col for col in columns if df[col].dtype in [pl.Int8, pl.Int16, pl.Int32, pl.Int64, pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64, pl.Float32, pl.Float64]]
+        
+        if len(numeric_columns) < 2:
+            # Need at least 2 numeric columns for correlation
+            return []
+        
+        correlation_matrix = df[numeric_columns].corr()
         correlated_pairs = []
-        for i in range(len(columns)):
-            for j in range(i + 1, len(columns)):
-                if abs(df.correlation_matrix.iloc[i, j]) > threshold:
-                    correlated_pairs.append((columns[i], columns[j], df.correlation_matrix.iloc[i, j]))
+        for i in range(len(numeric_columns)):
+            for j in range(i + 1, len(numeric_columns)):
+                corr_value = correlation_matrix[i, j]
+                if abs(corr_value) > threshold:
+                    correlated_pairs.append((numeric_columns[i], numeric_columns[j], corr_value))
 
         return correlated_pairs
     

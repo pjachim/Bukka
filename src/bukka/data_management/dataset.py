@@ -85,6 +85,16 @@ class Dataset:
         if dataset_path is not None and dataset_path.exists():
             logger.debug(f"Loading dataset from: {dataset_path}")
             df = self.io.load_from_file(dataset_path)
+            
+            # Validate target column exists in the dataset
+            if target_column and target_column not in df.columns:
+                available_cols = ', '.join(df.columns[:10])  # Show first 10 columns
+                if len(df.columns) > 10:
+                    available_cols += f", ... ({len(df.columns)} total)"
+                raise ValueError(
+                    f"Target column '{target_column}' not found in dataset. "
+                    f"Available columns: {available_cols}"
+                )
         else:
             logger.debug("No dataset path found or dataset does not exist, skipping dataset loading")
 
@@ -110,7 +120,7 @@ class Dataset:
         if feature_columns == None:
             logger.debug("Auto-detecting feature columns from training data")
             self.feature_columns = list(self.train_df.columns)
-            if target_column:
+            if target_column and target_column in self.feature_columns:
                 self.feature_columns.remove(target_column)
             logger.debug(f"Detected {len(self.feature_columns)} feature columns")
         

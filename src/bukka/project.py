@@ -15,32 +15,86 @@ from bukka.expert_system.pipeline_builder import PipelineBuilder
 logger = BukkaLogger(__name__)
 
 class Project:
-    """
-    Represents a data science or ML project, managing its file structure and environment setup.
+    """Represents a data science or ML project, managing its file structure and environment setup.
+    
+    This class orchestrates project creation, environment setup, and pipeline generation
+    for machine learning projects.
+    
+    Parameters
+    ----------
+    name : str
+        The name of the project (used as the project path).
+    dataset_path : str | None
+        The path to the original dataset file (optional).
+    target_column : str | None
+        The name of the target column in the dataset (optional).
+    skip_venv : bool, optional
+        Whether to skip virtual environment creation. Defaults to False.
+    backend : str, optional
+        Dataframe backend to use (e.g., 'polars', 'pandas'). Defaults to 'polars'.
+    problem_type : str, optional
+        ML problem type specification. Defaults to 'auto'.
+    train_size : float, optional
+        Proportion of data for training split. Defaults to 0.8.
+    stratify : bool, optional
+        Whether to stratify the train/test split. Defaults to True.
+    strata : list[str] | None, optional
+        Column(s) to use for stratification. Defaults to None.
+        
+    Examples
+    --------
+    >>> proj = Project(
+    ...     name="my_project",
+    ...     dataset_path="data.csv",
+    ...     target_column="target",
+    ...     backend="polars",
+    ...     problem_type="binary_classification"
+    ... )
+    >>> proj.run()
     """
     def __init__(
             self,
             name: str,
-            dataset_path: str,
-            target_column: str,
-            skip_venv: bool = False
+            dataset_path: str | None = None,
+            target_column: str | None = None,
+            skip_venv: bool = False,
+            backend: str = "polars",
+            problem_type: str = "auto",
+            train_size: float = 0.8,
+            stratify: bool = True,
+            strata: list[str] | None = None
         ) -> None:
-        """
-        Initialize a Project instance.
+        """Initialize a Project instance.
 
         Args:
-            name (str): The name of the project (used as the project path).
-            dataset_path (str): The path to the original dataset file.
+            name: The name of the project (used as the project path).
+            dataset_path: The path to the original dataset file (optional).
+            target_column: The name of the target column (optional).
+            skip_venv: Whether to skip virtual environment creation.
+            backend: Dataframe backend to use (default: 'polars').
+            problem_type: ML problem type (default: 'auto').
+            train_size: Train/test split ratio (default: 0.8).
+            stratify: Whether to stratify the split (default: True).
+            strata: Column(s) for stratification (default: None).
         """
         logger.info(f"Initializing Project: '{name}'")
         logger.debug(f"Dataset path: {dataset_path}")
         logger.debug(f"Target column: {target_column}")
+        logger.debug(f"Backend: {backend}")
+        logger.debug(f"Problem type: {problem_type}")
+        
         self.name: str = name
-        self.dataset_path: str = dataset_path
+        self.dataset_path: str | None = dataset_path
         self.file_manager: FileManager | None = None
-        self.target_column: str = target_column
+        self.target_column: str | None = target_column
         self.environ_manager: EnvironmentBuilder | None = None
         self.skip_venv: bool = skip_venv
+        self.backend: str = backend
+        self.problem_type: str = problem_type
+        self.train_size: float = train_size
+        self.stratify: bool = stratify
+        self.strata: list[str] | None = strata
+        
         logger.debug("Project instance created")
 
     def run(self) -> None:
@@ -61,7 +115,12 @@ class Project:
 
         if self.dataset_path:
             logger.info("Dataset path provided, generating pipeline")
-            self._write_pipeline(target_column=self.target_column)
+            self._write_pipeline(
+                target_column=self.target_column,
+                dataframe_backend=self.backend,
+                strata=self.strata,
+                stratify=self.stratify
+            )
             self._write_data_reader_class()
             self._write_starter_notebook()
         else:
@@ -105,10 +164,11 @@ class Project:
             target_column, 
             self.file_manager,
             strata=strata,
-            stratify=stratify
+            stratify=stratify,
+            train_size=self.train_size
         )
         logger.debug("Dataset instance created")
-        builder = PipelineBuilder(dataset, target_column)
+        builder = PipelineBuilder(dataset, target_column, problem_type=self.problem_type)
         pipeline_steps = builder.build_pipeline()
 
         # Generate pipeline

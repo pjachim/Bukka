@@ -11,16 +11,19 @@ class ProblemIdentifier:
     collects `Problem` instances into `self.problems_to_solve`.
     """
 
-    def __init__(self, dataset: Dataset, target_column: str | None) -> None:
+    def __init__(self, dataset: Dataset, target_column: str | None, problem_type: str = "auto") -> None:
         """Create a ProblemIdentifier for `dataset`.
 
         Args:
             dataset: A `Dataset` instance that exposes a `backend`
                 with inspection helper methods and `feature_columns`.
             target_column: The name of the target column in the dataset. if None, then clustering is assumed.
+            problem_type: ML problem type specification ('auto', 'binary_classification', 
+                'multiclass_classification', 'regression', 'clustering'). Defaults to 'auto'.
         """
         self.dataset: Dataset = dataset
         self.target_column: str | None = target_column
+        self.problem_type: str = problem_type
         self.problems_to_solve: ProblemsToSolve = ProblemsToSolve()
 
     def identify_problems(self) -> None:
