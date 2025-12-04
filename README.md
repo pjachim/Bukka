@@ -10,7 +10,7 @@
   * **Automated Environment Setup:** Automatically generates a Python virtual environment (`.venv`) to isolate your project dependencies.
   * **Dependency Management:** Creates a starting **`requirements.txt`** file with essential ML packages (e.g., NumPy, Pandas, Scikit-learn).
   * **YAML Configuration:** Use configuration files for complex project setups with `init-config` command.
-  * **Multiple Backends:** Support for various dataframe backends via narwhals (polars, pandas, modin, cudf, dask, pyarrow).
+  * **Multiple Backends (Coming Soon!):** Support for various dataframe backends via narwhals (polars~~, pandas, modin, cudf, dask, pyarrow~~).
   * **Problem Type Detection:** Automatic ML problem identification or explicit specification (classification, regression, clustering).
   * **Intelligent Pipeline Generation:** Automatically generates ML pipelines based on dataset analysis.
   * **CLI Simplicity:** Use simple, intuitive commands with subcommands to create a complete project skeleton in seconds.
@@ -64,7 +64,7 @@ python -m bukka run -n my_project -d data.csv -t label \
 # Custom train/test split
 python -m bukka run -n my_project -d data.csv -t target --train-size 0.7
 
-# Skip virtual environment creation
+# Skip virtual environment creation (makes command substantially faster)
 python -m bukka run -n my_project -d data.csv --skip-venv
 ```
 
@@ -157,11 +157,7 @@ python -m bukka run --config bukka_config.yaml
 
 **Supported Backends:**
 - `polars` (default)
-- `pandas`
-- `modin`
-- `cudf`
-- `dask`
-- `pyarrow`
+- More coming soon!
 
 **Problem Types:**
 - `auto` (default - automatic detection)
