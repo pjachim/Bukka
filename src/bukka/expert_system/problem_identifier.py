@@ -11,17 +11,26 @@ class ProblemIdentifier:
     collects `Problem` instances into `self.problems_to_solve`.
     """
 
-    def __init__(self, dataset: Dataset, target_column: str | None) -> None:
+    def __init__(self, dataset: Dataset, target_column: str | None, problem_type: str = "auto") -> None:
         """Create a ProblemIdentifier for `dataset`.
 
         Args:
             dataset: A `Dataset` instance that exposes a `backend`
                 with inspection helper methods and `feature_columns`.
             target_column: The name of the target column in the dataset. if None, then clustering is assumed.
+            problem_type: ML problem type specification ('auto', 'binary_classification', 
+                'multiclass_classification', 'regression', 'clustering'). Defaults to 'auto'.
         """
         self.dataset: Dataset = dataset
         self.target_column: str | None = target_column
+        self.problem_type: str = problem_type
         self.problems_to_solve: ProblemsToSolve = ProblemsToSolve()
+
+    def identify_problems(self) -> None:
+        """Identify problems in the dataset and populate `problems_to_solve`."""
+        self.multivariate_problems()
+        self.univariate_problems()
+        self.identify_ml_problem()
 
     def multivariate_problems(self) -> None:
         """Detect multivariate issues and add matching `Problem`s.
@@ -30,21 +39,21 @@ class ProblemIdentifier:
         strong correlations and appends `Problem` instances (with
         suggested solutions) to `self.problems_to_solve`.
         """
-        #if self.dataset.backend.has_multicollinearity():
-        #    problem = Problem(
-        #        problem_name="Multicollinearity",
-        #        description="The dataset contains multicollinear features.",
-        #        solutions=[sol.multivariate_solutions.remove_multicollinear_features]
-        #    )
-        #    self.problems_to_solve.add_problem(problem)
-        #
-        #if self.dataset.backend.has_strong_correlations():
-        #    problem = Problem(
-        #        problem_name="Strong Correlations",
-        #        description="The dataset contains strongly correlated features.",
-        #        solutions=[sol.multivariate_solutions.handle_strong_correlations]
-        #    )
-        #    self.problems_to_solve.add_problem(problem)
+        if self.dataset.has_multicollinearity():
+            # Check if multivariate_solutions module exists
+            if hasattr(sol, 'multivariate_solutions') and hasattr(sol.multivariate_solutions, 'remove_multicollinear_features'):
+                solutions = [sol.multivariate_solutions.remove_multicollinear_features]
+            else:
+                solutions = []
+            
+            problem = Problem(
+                problem_name="Multicollinearity",
+                description="The dataset contains multicollinear features.",
+                solutions=solutions,
+                features=[],
+                problem_type="transformer"
+            )
+            self.problems_to_solve.add_problem(problem)
 
     def univariate_problems(self) -> None:
         """Inspect each feature for univariate problems.
@@ -62,7 +71,7 @@ class ProblemIdentifier:
             feature: Name of the feature/column to inspect.
         """
         # Identify null/missing value problems
-        if self.dataset.backend.get_column_null_count(feature):
+        if self.dataset.get_column_null_count(feature):
             problem = Problem(
                 problem_name="Null Values",
                 description=f"The feature '{feature}' contains null values.",
@@ -76,8 +85,8 @@ class ProblemIdentifier:
             self.problems_to_solve.add_problem(problem)
 
         # Numeric-type specific checks (outliers)
-        if self.dataset.backend.type_of_column(feature) in ["int", "float"]:
-            if self.dataset.backend.has_outliers(feature):
+        if self.dataset.type_of_column(feature) in ["int", "float"]:
+            if self.dataset.has_outliers(feature):
                 problem = Problem(
                     problem_name="Outliers",
                     description=f"The feature '{feature}' contains outlier values.",
@@ -91,8 +100,8 @@ class ProblemIdentifier:
                 self.problems_to_solve.add_problem(problem)
 
         # String/categorical-type specific checks
-        if self.dataset.backend.type_of_column(feature) == "string":
-            if self.dataset.backend.has_inconsistent_categorical_data(feature):
+        if self.dataset.type_of_column(feature) == "string":
+            if self.dataset.has_inconsistent_categorical_data(feature):
                 problem = Problem(
                     problem_name="Inconsistent Categorical Data",
                     description=f"The feature '{feature}' contains inconsistent categorical data.",
@@ -105,7 +114,7 @@ class ProblemIdentifier:
                 )
                 self.problems_to_solve.add_problem(problem)
 
-    def _identify_ml_problem(self) -> str:
+    def identify_ml_problem(self) -> str:
         """Identify the type of machine learning needed."""
         if self.target_column is None:
             self.ml_problem = Problem(
@@ -116,8 +125,8 @@ class ProblemIdentifier:
                 problem_type="model",
             )
             return
-        elif self.dataset.backend.type_of_column(self.target_column) in ["int", "float"]:
-            if self.dataset.backend.get_unq_count(self.target_column) > 20:
+        elif self.dataset.type_of_column(self.target_column) in ["int", "float"]:
+            if self.dataset.get_unq_count(self.target_column) > 20:
                 self.ml_problem = Problem(
                     problem_name="Regression",
                     description="The target variable is continuous.",
@@ -127,7 +136,7 @@ class ProblemIdentifier:
                 )
         
         # This means classification, as target is not None and not regression. Now let's see if it's binary or multi-class.
-        if self.dataset.backend.get_unq_count(self.target_column) == 2:
+        if self.dataset.get_unq_count(self.target_column) == 2:
             self.ml_problem = Problem( 
                 problem_name="Binary Classification",
                 description="The target variable has two distinct classes.",

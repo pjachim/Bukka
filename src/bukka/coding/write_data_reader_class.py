@@ -1,6 +1,6 @@
-from bukka.logistics.files.file_manager import FileManager
+from bukka.utils.files.file_manager import FileManager
 
-class_template = '''
+CLASS_TEMPLATE = '''
 import polars as pl
 
 class DataReader:
@@ -30,8 +30,30 @@ class DataReader:
     def _read_file(self, filepath: str):
         """Reads a Parquet file and returns a Polars DataFrame."""
         return pl.read_parquet(filepath)
+
 '''
 
+# These methods are added only if a target column is specified (no need for X/y split for unsupervised tasks)
+ADDITIONAL_SUPERVISED_METHODS = '''
+    def readXy_train(self, target_column: str | None = {target_column}) -> tuple[pl.DataFrame, pl.DataFrame]:
+        """Reads the training data and splits it into features and target."""
+        return self._readXy(self.train_filepath, target_column, is_train=True)
+
+    def readXy_test(self, target_column: str | None = {target_column}) -> tuple[pl.DataFrame, pl.DataFrame]:
+        """Reads the testing data and splits it into features and target."""
+        return self._readXy(self.test_filepath, target_column, is_train=False)
+
+    def _readXy(self, filepath: str, target_column: str | None = {target_column}, is_train: bool) -> tuple[pl.DataFrame, pl.DataFrame]:
+        """Reads a Parquet file and splits it into features and target."""
+        if is_train:
+            df = self.read_train_data()
+        else:
+            df = self.read_test_data()
+
+        X = df.drop([target_column])
+        y = df.select(pl.col(target_column))
+        return X, y
+'''
 
 class DataReaderWriter:
     """
@@ -52,10 +74,11 @@ class DataReaderWriter:
     >>> writer = DataReaderWriter(file_handler)
     >>> writer.write_class()  # Writes DataReader class to file
     """
-    def __init__(self, file_manager: FileManager) -> None:
+    def __init__(self, file_manager: FileManager, target_column: str | None = None) -> None:
         self.file_manager = file_manager
+        self.target_column = target_column
 
-    def write_class(self) -> None:
+    def write_code(self) -> None:
         """
         Write the DataReader class to the configured output path.
 
@@ -79,19 +102,19 @@ class DataReaderWriter:
         -------
         str
             Python source code for the DataReader class with paths substituted.
-
-        Examples
-        --------
-        >>> writer = DataReaderWriter(file_manager)
-        >>> code = writer._fill_template()
-        >>> assert "train_filepath" in code
         """
+        if self.target_column is not None:
+            class_template = CLASS_TEMPLATE + ADDITIONAL_SUPERVISED_METHODS
+        else:
+            class_template = CLASS_TEMPLATE
+
         filled_template = class_template.strip()
         # Use relative paths from project root
         train_rel = self.file_manager.train_data_file.relative_to(self.file_manager.project_path)
         test_rel = self.file_manager.test_data_file.relative_to(self.file_manager.project_path)
         filled_template = filled_template.format(
             train_filepath=repr(str(train_rel).replace('\\', '/')),
-            test_filepath=repr(str(test_rel).replace('\\', '/'))
+            test_filepath=repr(str(test_rel).replace('\\', '/')),
+            target_column=repr(self.target_column)
         )
         return filled_template

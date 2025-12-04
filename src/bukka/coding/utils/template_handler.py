@@ -90,7 +90,7 @@ class TemplateBaseClass:
         else:
             self.expected_args = list(expected_args)
 
-    def write_class(self) -> None:
+    def write_code(self) -> None:
         """
         Fill the template and write the resulting code to the output file.
         
@@ -143,3 +143,42 @@ class TemplateBaseClass:
         filled_template = filled_template.format(**self.kwargs)
 
         return filled_template
+    
+    def make_python_string_variable_safe(self, var_name: str, lowercase: bool = False) -> str:
+        """
+        Convert a string into a valid Python variable name.
+        
+        This method replaces spaces and special characters in the input string
+        with underscores, ensuring the resulting string adheres to Python's
+        variable naming conventions.
+        
+        Parameters
+        ----------
+        var_name : str
+            The input string to be converted into a valid Python variable name.
+        
+        Returns
+        -------
+        str
+            A valid Python variable name derived from the input string.
+        
+        Examples
+        --------
+        >>> handler = TemplateBaseClass(
+        ...     template="",
+        ...     output_path="",
+        ...     kwargs={}
+        ... )
+        >>> safe_name = handler.make_python_string_variable_safe("my variable-name!")
+        >>> print(safe_name)
+        my_variable_name_
+        """
+        safe_name = ''.join(
+            char if char.isalnum() or char == '_' else '_'
+            for char in var_name
+        )
+
+        if lowercase:
+            safe_name = safe_name.lower()
+        
+        return safe_name

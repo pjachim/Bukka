@@ -10,13 +10,13 @@ from pathlib import Path
 import pytest
 from unittest.mock import patch
 
-from bukka.logistics.project import Project
+from bukka.project import Project
 
 
 class TestProjectNotebookIntegration:
     """Integration tests for Project notebook generation with venv."""
 
-    @patch('bukka.logistics.environment.environment.EnvironmentBuilder.build_environment')
+    @patch('bukka.environment.environment.EnvironmentBuilder.build_environment')
     def test_project_creates_venv_connected_notebook(self, mock_build_env) -> None:
         """Test that Project creates a notebook connected to the venv."""
         # Create temporary dataset

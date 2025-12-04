@@ -2,45 +2,99 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from bukka.logistics.files.file_manager import FileManager
-from bukka.logistics.environment.environment import EnvironmentBuilder
+from bukka.utils.files.file_manager import FileManager
+from bukka.environment.environment import EnvironmentBuilder
 from bukka.data_management.dataset import Dataset
-from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
 from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
 from bukka.utils.bukka_logger import BukkaLogger
+from bukka.expert_system.pipeline_builder import PipelineBuilder
 
 logger = BukkaLogger(__name__)
 
 class Project:
-    """
-    Represents a data science or ML project, managing its file structure and environment setup.
+    """Represents a data science or ML project, managing its file structure and environment setup.
+    
+    This class orchestrates project creation, environment setup, and pipeline generation
+    for machine learning projects.
+    
+    Parameters
+    ----------
+    name : str
+        The name of the project (used as the project path).
+    dataset_path : str | None
+        The path to the original dataset file (optional).
+    target_column : str | None
+        The name of the target column in the dataset (optional).
+    skip_venv : bool, optional
+        Whether to skip virtual environment creation. Defaults to False.
+    backend : str, optional
+        Dataframe backend to use (e.g., 'polars', 'pandas'). Defaults to 'polars'.
+    problem_type : str, optional
+        ML problem type specification. Defaults to 'auto'.
+    train_size : float, optional
+        Proportion of data for training split. Defaults to 0.8.
+    stratify : bool, optional
+        Whether to stratify the train/test split. Defaults to True.
+    strata : list[str] | None, optional
+        Column(s) to use for stratification. Defaults to None.
+        
+    Examples
+    --------
+    >>> proj = Project(
+    ...     name="my_project",
+    ...     dataset_path="data.csv",
+    ...     target_column="target",
+    ...     backend="polars",
+    ...     problem_type="binary_classification"
+    ... )
+    >>> proj.run()
     """
     def __init__(
             self,
             name: str,
-            dataset_path: str,
-            target_column: str,
-            skip_venv: bool = False
+            dataset_path: str | None = None,
+            target_column: str | None = None,
+            skip_venv: bool = False,
+            backend: str = "polars",
+            problem_type: str = "auto",
+            train_size: float = 0.8,
+            stratify: bool = True,
+            strata: list[str] | None = None
         ) -> None:
-        """
-        Initialize a Project instance.
+        """Initialize a Project instance.
 
         Args:
-            name (str): The name of the project (used as the project path).
-            dataset_path (str): The path to the original dataset file.
+            name: The name of the project (used as the project path).
+            dataset_path: The path to the original dataset file (optional).
+            target_column: The name of the target column (optional).
+            skip_venv: Whether to skip virtual environment creation.
+            backend: Dataframe backend to use (default: 'polars').
+            problem_type: ML problem type (default: 'auto').
+            train_size: Train/test split ratio (default: 0.8).
+            stratify: Whether to stratify the split (default: True).
+            strata: Column(s) for stratification (default: None).
         """
         logger.info(f"Initializing Project: '{name}'")
         logger.debug(f"Dataset path: {dataset_path}")
         logger.debug(f"Target column: {target_column}")
+        logger.debug(f"Backend: {backend}")
+        logger.debug(f"Problem type: {problem_type}")
+        
         self.name: str = name
-        self.dataset_path: str = dataset_path
+        self.dataset_path: str | None = dataset_path
         self.file_manager: FileManager | None = None
-        self.target_column: str = target_column
+        self.target_column: str | None = target_column
         self.environ_manager: EnvironmentBuilder | None = None
         self.skip_venv: bool = skip_venv
+        self.backend: str = backend
+        self.problem_type: str = problem_type
+        self.train_size: float = train_size
+        self.stratify: bool = stratify
+        self.strata: list[str] | None = strata
+        
         logger.debug("Project instance created")
 
     def run(self) -> None:
@@ -61,7 +115,12 @@ class Project:
 
         if self.dataset_path:
             logger.info("Dataset path provided, generating pipeline")
-            self._write_pipeline(target_column=self.target_column)
+            self._write_pipeline(
+                target_column=self.target_column,
+                dataframe_backend=self.backend,
+                strata=self.strata,
+                stratify=self.stratify
+            )
             self._write_data_reader_class()
             self._write_starter_notebook()
         else:
@@ -75,7 +134,7 @@ class Project:
             dataframe_backend: str = "polars",
             strata: list[str] | None = None,
             stratify: bool = True,
-        ) -> str:
+        ):
         """Generate a candidate pipeline and save it to the project pipelines folder.
 
         This method creates a `Dataset` using the project's `FileManager`, runs
@@ -99,69 +158,32 @@ class Project:
         logger.info("Starting pipeline generation", format_level='h4')
         logger.debug(f"Target column: {target_column}")
         logger.debug(f"Dataframe backend: {dataframe_backend}")
-        
-        if self.file_manager is None:
-            logger.debug("FileManager not initialized, building skeleton")
-            # Ensure skeleton exists and dataset is copied
-            self._build_skeleton()
 
         logger.info("Creating Dataset instance")
         dataset = Dataset(
             target_column, 
-            self.file_manager, 
-            dataframe_backend, 
+            self.file_manager,
             strata=strata,
-            stratify=stratify
+            stratify=stratify,
+            train_size=self.train_size,
+            backend=dataframe_backend
         )
-        logger.debug(f"Dataset created with {len(dataset.feature_columns)} features")
-        
-        logger.info("Initializing ProblemIdentifier")
-        identifier = ProblemIdentifier(dataset, target_column)
-        
-        # Run detection phases
-        logger.info("Running multivariate problem detection")
-        identifier.multivariate_problems()
-        logger.debug("Multivariate problem detection complete")
-        
-        logger.info("Running univariate problem detection")
-        identifier.univariate_problems()
-        logger.debug("Univariate problem detection complete")
-        
-        # identify ml problem (may be clustering/regression/classification)
-        logger.info("Identifying ML problem type")
-        try:
-            identifier._identify_ml_problem()
-            logger.debug("ML problem identification complete")
-        except Exception as e:
-            logger.warn(f"Failed to identify ML problem: {e}")
-            # If private method naming changes, ignore to avoid crashing here
-            pass
+        logger.debug("Dataset instance created")
+        builder = PipelineBuilder(dataset, target_column, problem_type=self.problem_type)
+        pipeline_steps = builder.build_pipeline()
 
         # Generate pipeline
-        logger.info("Generating pipeline code")
-        writer = PipelineWriter(identifier)
-        logger.debug("PipelineWriter initialized")
-        
-        _, _ = writer.write()
-        pipeline_text = writer.pipeline_definition or ""
-        logger.debug(f"Pipeline code generated: {len(pipeline_text)} characters")
-
-        # Prepare destination file
-        gen_dir: Path = self.file_manager.generated_pipes
-        logger.debug(f"Pipeline destination directory: {gen_dir}")
-        gen_dir.mkdir(parents=True, exist_ok=True)
-        
         timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
         filename = f"pipeline_{timestamp}.py"
-        dest = gen_dir / filename
-        logger.debug(f"Pipeline filename: {filename}")
 
-        # Write pipeline text
-        logger.info(f"Writing pipeline to: {dest}")
-        dest.write_text(pipeline_text, encoding="utf-8")
+        logger.info("Generating pipeline code")
+        writer = PipelineWriter(
+            pipeline_steps=pipeline_steps,
+            output_path=self.file_manager.generated_pipes / filename
+        )
+        writer.write_code()
+        logger.debug(f"Pipeline written to: {self.file_manager.generated_pipes / filename}")
         logger.info("Pipeline generation complete", format_level='h4')
-
-        return str(dest.resolve())
     
     def _write_data_reader_class(self) -> None:
         """Generate and write a data reader class to the project.
@@ -171,7 +193,7 @@ class Project:
         The generated class is saved to the project's data readers folder.  
         """
         writer = DataReaderWriter(self.file_manager)
-        writer.write_class()
+        writer.write_code()
         logger.info("Data reader class generation complete", format_level='h4')
 
     def _build_skeleton(self) -> None:
@@ -246,5 +268,5 @@ class Project:
             project_name=self.name
         )
 
-        writer.write_class()
+        writer.write_code()
         logger.info(f"pyproject.toml written to: {toml_path}")

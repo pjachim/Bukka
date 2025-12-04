@@ -1,12 +1,15 @@
 [project]
 name = "bukka"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="Peter Jachim", email="pjachim@outlook.com" },
 ]
 description = "ML Project Quickstart"
 readme = "README.md"
 requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
