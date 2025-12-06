@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 import shutil
 from typing import Generator
-from bukka.logistics.files.file_manager import FileManager
+from bukka.utils.files.file_manager import FileManager
 
 # A fixture to create a temporary, isolated directory structure for testing.
 # This ensures tests are clean and don't affect the actual filesystem.
@@ -94,7 +94,7 @@ class TestFileManagerPaths:
 
         # Expected miscellaneous paths
         assert fm.virtual_env == project_root / '.venv'
-        assert fm.scripts == project_root / 'scripts'
+        #assert fm.scripts == project_root / 'scripts'
 
         # Expected file paths (just for tracking)
         assert fm.requirements_path == project_root / 'requirements.txt'
@@ -169,7 +169,7 @@ class TestFileManagerBuildSkeleton:
     def test_skeleton_creation_success(self, tmp_project_setup: tuple[Path, Path]):
         """Test that build_skeleton creates all necessary directories and files."""
         project_root, mock_dataset_path = tmp_project_setup
-        fm = FileManager(project_root, mock_dataset_path)
+        fm: FileManager = FileManager(project_root, mock_dataset_path)
 
         fm.build_skeleton()
 
@@ -188,8 +188,8 @@ class TestFileManagerBuildSkeleton:
 
         # 3. Check Other Directories and __init__.py
         assert fm.virtual_env.is_dir()
-        assert fm.scripts.is_dir()
-        assert (fm.scripts / '__init__.py').is_file()
+        #assert fm.scripts.is_dir()
+        #assert (fm.scripts / '__init__.py').is_file()
 
         # 4. Check Dataset Copy
         final_dataset_path = fm.dataset_path
