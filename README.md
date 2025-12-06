@@ -98,7 +98,7 @@ When you run `python -m bukka run --name <name>`, the following standardized str
 │   └── train/                     # Training split data
 ├── pipelines/                     # ML Pipelines
 │   ├── __init__.py                # Makes 'pipelines' a Python package
-│   ├── baseline/                  # Baseline pipelines (e.g. naive classifiers)
+│   ├── baseline/                  # Baseline pipelines (e.g. naive classifiers, currently empty)
 │   ├── candidate/                 # Your custom pipelines
 │   └── generated/                 # Auto-generated pipelines from dataset analysis
 ├── notebooks/                     # Jupyter notebooks for experimentation
