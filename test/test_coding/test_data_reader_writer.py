@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from bukka.coding.write_data_reader_class import DataReaderWriter
-from bukka.logistics.files.file_manager import FileManager
+from bukka.utils.files.file_manager import FileManager
 
 
 class TestDataReaderWriter:
@@ -62,7 +62,7 @@ class TestDataReaderWriter:
             
             # Write the DataReader class
             writer = DataReaderWriter(fm)
-            writer.write_class()
+            writer.write_code()
             
             # Verify the file was created
             assert fm.data_reader_path.exists()
