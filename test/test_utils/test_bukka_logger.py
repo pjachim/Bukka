@@ -82,14 +82,6 @@ class TestBukkaLoggerLoggingMethods:
         with patch.object(self.bukka_logger, 'format_message', wraps=self.bukka_logger.format_message) as self.mock_format_message:
             yield
 
-    @pytest.mark.parametrize("method_name, log_level", [
-        ('debug', logging.DEBUG),
-        ('info', logging.INFO),
-        ('warn', logging.WARNING),
-        ('error', logging.ERROR),
-        ('critical', logging.CRITICAL),
-    ])
-
     def test_warn_uses_warning(self):
         """Test that the 'warn' method internally uses logger.warning() (best practice)."""
         test_msg = "Warning test."
