@@ -3,7 +3,7 @@ from bukka.utils.files.file_manager import FileManager
 CLASS_TEMPLATE = '''
 import narwhals as nw
 import polars as pl
-from config import DATAFRAME_BACKEND
+from config import DATAFRAME_BACKEND, TRAIN_DATASET_PATH, TEST_DATASET_PATH
 from narwhals.typing import FrameT
 
 class DataReader:
@@ -18,7 +18,7 @@ class DataReader:
         read_train_data(): Reads and returns the training data as a Narwhals DataFrame.
         read_test_data(): Reads and returns the testing data as a Narwhals DataFrame.
     """
-    def __init__(self, train_filepath: str = {train_filepath}, test_filepath: str = {test_filepath}):
+    def __init__(self, train_filepath: str = TRAIN_DATASET_PATH, test_filepath: str = TEST_DATASET_PATH):
         self.train_filepath = train_filepath
         self.test_filepath = test_filepath
         self.dataframe_backend = DATAFRAME_BACKEND
@@ -118,8 +118,6 @@ class DataReaderWriter:
         train_rel = self.file_manager.train_data_file.relative_to(self.file_manager.project_path)
         test_rel = self.file_manager.test_data_file.relative_to(self.file_manager.project_path)
         filled_template = filled_template.format(
-            train_filepath=repr(str(train_rel).replace('\\', '/')),
-            test_filepath=repr(str(test_rel).replace('\\', '/')),
             target_column=repr(self.target_column)
         )
         return filled_template
