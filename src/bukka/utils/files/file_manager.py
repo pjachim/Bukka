@@ -87,6 +87,10 @@ class FileManager:
         """
         # Data related paths
         self.data_path: Path = self.project_path / 'data'
+
+        self.train_file_relative_path: Path = Path('data') / 'train' / 'train_data.pqt'
+        self.test_file_relative_path: Path = Path('data') / 'test' / 'test_data.pqt'
+
         self.train_data: Path = self.data_path / 'train'
         self.test_data: Path = self.data_path / 'test'
 
