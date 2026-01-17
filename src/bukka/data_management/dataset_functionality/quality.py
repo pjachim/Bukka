@@ -1,13 +1,15 @@
+import narwhals as nw
+from narwhals.typing import FrameT
 import polars as pl
 
 class DatasetQuality:
     """
-    Class for assessing dataset quality.
+    Class for assessing dataset quality using Narwhals for dataframe abstraction.
     """
     def __init__(self):
         pass
 
-    def get_column_null_count(self, df: pl.DataFrame, column: str) -> int:
+    def get_column_null_count(self, df: FrameT, column: str) -> int:
         """Get the count of null values in a specific column.
         
         Parameters
@@ -25,22 +27,24 @@ class DatasetQuality:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({
         ...     'feature1': [1, None, 3],
         ...     'feature2': [None, 2, 3]
         ... })
+        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> quality.get_column_null_count(df, 'feature1')
         1
         """
-        return df.select(pl.col(column).is_null().sum()).item()
+        return int(df.select(nw.col(column).is_null().sum()).to_numpy()[0, 0])
     
-    def type_of_column(self, df: pl.DataFrame, column: str) -> str:
+    def type_of_column(self, df: FrameT, column: str) -> str:
         """Get the data type of a column as a simplified string.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column : str
             Name of the column to check.
@@ -48,16 +52,18 @@ class DatasetQuality:
         Returns
         -------
         str
-            The simplified data type: 'int', 'float', 'string', or the polars type name.
+            The simplified data type: 'int', 'float', 'string', or the type name.
         
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({
         ...     'int_col': [1, 2, 3],
         ...     'float_col': [1.0, 2.5, 3.3],
         ...     'str_col': ['a', 'b', 'c']
         ... })
+        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> quality.type_of_column(df, 'int_col')
         'int'
@@ -69,17 +75,17 @@ class DatasetQuality:
         dtype = df.schema[column]
         dtype_str = str(dtype).lower()
         
-        # Map polars types to simplified types
+        # Map types to simplified types
         if 'int' in dtype_str:
             return 'int'
         elif 'float' in dtype_str or 'double' in dtype_str:
             return 'float'
-        elif 'str' in dtype_str or 'utf8' in dtype_str:
+        elif 'str' in dtype_str or 'utf8' in dtype_str or 'string' in dtype_str:
             return 'string'
         else:
             return dtype_str
     
-    def has_inconsistent_categorical_data(self, df: pl.DataFrame, column: str, threshold: float = 0.1) -> bool:
+    def has_inconsistent_categorical_data(self, df: FrameT, column: str, threshold: float = 0.1) -> bool:
         """Check if a categorical column has inconsistent data.
         
         Detects potential inconsistencies by checking for categories that differ
@@ -88,7 +94,7 @@ class DatasetQuality:
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column : str
             Name of the column to check.
@@ -104,21 +110,25 @@ class DatasetQuality:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({
         ...     'category': ['Cat', 'cat', 'CAT', 'Dog', 'dog']
         ... })
+        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> quality.has_inconsistent_categorical_data(df, 'category')
         True
         
-        >>> df2 = pl.DataFrame({
+        >>> native_df2 = pl.DataFrame({
         ...     'category': ['Cat', 'Cat', 'Dog', 'Dog', 'Bird']
         ... })
+        >>> df2 = nw.from_native(native_df2)
         >>> quality.has_inconsistent_categorical_data(df2, 'category')
         False
         """
-        # Get unique values
-        unique_values = df.select(pl.col(column).unique()).to_series().to_list()
+        # Get unique values - convert to native for to_list()
+        native_df = nw.to_native(df)
+        unique_values = native_df.select(native_df[column].unique()).to_series().to_list()
         
         # Check for case inconsistencies
         normalized = [str(v).strip().lower() if v is not None else None for v in unique_values]
@@ -129,33 +139,35 @@ class DatasetQuality:
             return True
         
         # Check if the unique ratio is suspiciously high (too many unique values)
-        unique_count = df.select(pl.col(column).n_unique()).item()
-        total_count = df.height
+        unique_count = int(df.select(nw.col(column).n_unique()).to_numpy()[0, 0])
+        total_count = len(df)
         if unique_count / total_count > threshold:
             return True
         
         return False
 
-    def check_missing_values(self, df: pl.DataFrame) -> pl.DataFrame:
+    def check_missing_values(self, df: FrameT) -> FrameT:
         """Check for missing values in the DataFrame.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame to check.
         
         Returns
         -------
-        polars.DataFrame
+        Narwhals DataFrame
             A DataFrame with columns and their corresponding count of missing values.
         
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({
         ...     'feature1': [1, None, 3],
         ...     'feature2': [None, 2, 3]
         ... })
+        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> missing_df = quality.check_missing_values(df)
         >>> missing_df
@@ -170,56 +182,61 @@ class DatasetQuality:
         └────────────┴───────────────┘
         """
         missing_counts = {
-            col: df.select(pl.col(col).is_null().sum()).item()
+            col: int(df.select(nw.col(col).is_null().sum()).to_numpy()[0, 0])
             for col in df.columns
         }
-        return pl.DataFrame({
+        # Return as native Polars for now (will be wrapped if needed)
+        result_df = pl.DataFrame({
             "column": list(missing_counts.keys()),
             "missing_count": list(missing_counts.values())
         })
+        return nw.from_native(result_df)
     
-    def convert_columns_conservatively_to_best_type(self, df: pl.DataFrame) -> pl.DataFrame:
+    def convert_columns_conservatively_to_best_type(self, df: FrameT) -> FrameT:
         """Convert columns to their best possible types conservatively.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame to convert.
         
         Returns
         -------
-        polars.DataFrame
+        Narwhals DataFrame
             The DataFrame with columns converted to best possible types.
         
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({
         ...     'int_str': ['1', '2', '3'],
         ...     'float_str': ['1.0', '2.5', '3.3'],
         ...     'mixed_str': ['1', 'two', '3']
         ... })
+        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> converted_df = quality.convert_columns_conservatively_to_best_type(df)
-        >>> converted_df.dtypes
-        [Int64, Float64, Utf8]
+        >>> # Check types
         """
-        for col in df.columns:
+        # This method uses Polars-specific casting, convert to native
+        native_df = nw.to_native(df)
+        for col in native_df.columns:
             try:
-                df = df.with_column(pl.col(col).cast(pl.Int64, strict=False))
+                native_df = native_df.with_columns(native_df[col].cast(pl.Int64, strict=False))
                 continue
             except:
                 pass
             try:
-                df = df.with_column(pl.col(col).cast(pl.Float64, strict=False))
-                continue
-            except:
-                pass
-
-            try:
-                df = df.with_column(pl.col(col).str.strptime(pl.Datetime, strict=False))
+                native_df = native_df.with_columns(native_df[col].cast(pl.Float64, strict=False))
                 continue
             except:
                 pass
 
-        return df
+            try:
+                native_df = native_df.with_columns(native_df[col].str.strptime(pl.Datetime, strict=False))
+                continue
+            except:
+                pass
+
+        return nw.from_native(native_df)

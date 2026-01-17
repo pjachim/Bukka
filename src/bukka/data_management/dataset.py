@@ -7,14 +7,16 @@ from bukka.data_management.dataset_functionality import (
     DatasetIO,
     DatasetQuality,
 )
+from narwhals.typing import FrameT
+import narwhals as nw
 logger = BukkaLogger(__name__)
 
 class Dataset:
     """Dataset class for managing and splitting datasets for expert systems.
     
-    This class loads, splits, and manages datasets, delegating backend operations
-    to pluggable implementations (default: Polars). It writes train/test splits as
-    Parquet files and exposes schema and feature metadata.
+    This class loads, splits, and manages datasets using Narwhals for dataframe
+    abstraction. It writes train/test splits as Parquet files and exposes schema
+    and feature metadata.
     
     Parameters
     ----------
@@ -42,9 +44,9 @@ class Dataset:
         List of feature column names.
     data_schema : dict[str, pyarrow.DataType]
         Schema of the training data (column names mapped to PyArrow data types).
-    train_df : polars.DataFrame
+    train_df : Narwhals DataFrame
         Training data split.
-    test_df : polars.DataFrame
+    test_df : Narwhals DataFrame
         Test data split.
     
     Examples
@@ -87,6 +89,10 @@ class Dataset:
         if dataset_path is not None and dataset_path.exists():
             logger.debug(f"Loading dataset from: {dataset_path}")
             df = self.io.load_from_file(dataset_path)
+            
+            # Ensure we have a Narwhals DataFrame (for compatibility with tests/mocks)
+            if not hasattr(df, '__narwhals_dataframe__'):
+                df = nw.from_native(df)
             
             # Validate target column exists in the dataset
             if target_column and target_column not in df.columns:

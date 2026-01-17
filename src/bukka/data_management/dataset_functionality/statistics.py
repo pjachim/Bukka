@@ -1,20 +1,22 @@
-import polars as pl
+import narwhals as nw
+from narwhals.typing import FrameT
 
 class DatasetStatistics:
     """Class for computing statistical properties of datasets.
     
     This class provides methods for analyzing correlations, outliers,
-    scale variations, and basic descriptive statistics.
+    scale variations, and basic descriptive statistics using Narwhals
+    for dataframe abstraction.
     """
     def __init__(self):
         pass
     
-    def identify_multicollinearity(self, df, columns, threshold=0.8):
+    def identify_multicollinearity(self, df: FrameT, columns: list[str], threshold: float = 0.8) -> list[tuple[str, str, float]]:
         """Identify pairs of columns with high correlation.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame to analyze.
         columns : list[str]
             List of column names to check for multicollinearity.
@@ -31,24 +33,29 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({
         ...     'a': [1, 2, 3, 4, 5],
         ...     'b': [2, 4, 6, 8, 10],
         ...     'c': [5, 4, 3, 2, 1]
         ... })
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> pairs = stats.identify_multicollinearity(df, ['a', 'b', 'c'])
         >>> # Returns pairs where abs(correlation) > 0.8
         """
-        # Filter to only numeric columns to avoid TypeError with string columns
-        import polars as pl
-        numeric_columns = [col for col in columns if df[col].dtype in [pl.Int8, pl.Int16, pl.Int32, pl.Int64, pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64, pl.Float32, pl.Float64]]
+        # Filter to only numeric columns
+        numeric_dtypes = {nw.Int8, nw.Int16, nw.Int32, nw.Int64, nw.UInt8, nw.UInt16, nw.UInt32, nw.UInt64, nw.Float32, nw.Float64}
+        schema = df.schema
+        numeric_columns = [col for col in columns if col in schema and schema[col] in numeric_dtypes]
         
         if len(numeric_columns) < 2:
             # Need at least 2 numeric columns for correlation
             return []
         
-        correlation_matrix = df[numeric_columns].corr()
+        # Convert to native for correlation computation (not all backends support corr in Narwhals)
+        native_df = nw.to_native(df)
+        correlation_matrix = native_df[numeric_columns].corr()
         correlated_pairs = []
         for i in range(len(numeric_columns)):
             for j in range(i + 1, len(numeric_columns)):
@@ -58,12 +65,12 @@ class DatasetStatistics:
 
         return correlated_pairs
     
-    def varied_scale(self, df, column_name):
+    def varied_scale(self, df: FrameT, column_name: str) -> float:
         """Calculate the range (scale) of a column.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column_name : str
             Name of the column to analyze.
@@ -76,21 +83,25 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({'values': [1, 5, 10, 100]})
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({'values': [1, 5, 10, 100]})
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> scale = stats.varied_scale(df, 'values')
         >>> scale
         99
         """
-        col = df.select(pl.col(column_name))
-        return col.max()[0, 0] - col.min()[0, 0]
+        col = df.select(nw.col(column_name))
+        max_val = col.select(nw.col(column_name).max()).to_numpy()[0, 0]
+        min_val = col.select(nw.col(column_name).min()).to_numpy()[0, 0]
+        return max_val - min_val
     
-    def does_data_have_varied_scale(self, df, column_name, threshold):
+    def does_data_have_varied_scale(self, df: FrameT, column_name: str, threshold: float) -> bool:
         """Check if a column has a scale greater than a threshold.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column_name : str
             Name of the column to check.
@@ -105,7 +116,9 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({'prices': [10, 20, 1000]})
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({'prices': [10, 20, 1000]})
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> stats.does_data_have_varied_scale(df, 'prices', 100)
         True
@@ -115,12 +128,12 @@ class DatasetStatistics:
         scale = self.varied_scale(df, column_name)
         return scale > threshold
     
-    def does_data_have_outliers(self, df, column_name, z_threshold=3):
+    def does_data_have_outliers(self, df: FrameT, column_name: str, z_threshold: float = 3) -> bool:
         """Detect outliers using z-score method.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column_name : str
             Name of the column to check for outliers.
@@ -136,26 +149,29 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({'values': [1, 2, 3, 4, 100]})
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 100]})
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> stats.does_data_have_outliers(df, 'values')
         True
-        >>> df2 = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
+        >>> native_df2 = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
+        >>> df2 = nw.from_native(native_df2)
         >>> stats.does_data_have_outliers(df2, 'values')
         False
         """
-        col = df.select(pl.col(column_name))
-        mean = col.mean()[0, 0]
-        std_dev = col.std()[0, 0]
-        outliers = col.filter((pl.col(column_name) - mean).abs() > z_threshold * std_dev)
-        return outliers.height > 0
+        col = df.select(nw.col(column_name))
+        mean = col.select(nw.col(column_name).mean()).to_numpy()[0, 0]
+        std_dev = col.select(nw.col(column_name).std()).to_numpy()[0, 0]
+        outliers = col.filter((nw.col(column_name) - mean).abs() > z_threshold * std_dev)
+        return len(outliers) > 0
     
-    def has_outliers(self, df, column_name, z_threshold=3):
+    def has_outliers(self, df: FrameT, column_name: str, z_threshold: float = 3) -> bool:
         """Detect outliers using z-score method (alias for does_data_have_outliers).
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column_name : str
             Name of the column to check for outliers.
@@ -171,19 +187,21 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({'values': [1, 2, 3, 4, 100]})
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 100]})
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> stats.has_outliers(df, 'values')
         True
         """
         return self.does_data_have_outliers(df, column_name, z_threshold)
     
-    def get_unq_count(self, df, column_name):
+    def get_unq_count(self, df: FrameT, column_name: str) -> int:
         """Get the count of unique values in a column.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column_name : str
             Name of the column to analyze.
@@ -196,19 +214,21 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({'values': [1, 2, 2, 3, 3, 3]})
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({'values': [1, 2, 2, 3, 3, 3]})
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> stats.get_unq_count(df, 'values')
         3
         """
-        return df.select(pl.col(column_name).n_unique()).item()
+        return int(df.select(nw.col(column_name).n_unique()).to_numpy()[0, 0])
     
-    def does_data_have_multicollinearity(self, df, columns, threshold=0.8):
+    def does_data_have_multicollinearity(self, df: FrameT, columns: list[str], threshold: float = 0.8) -> bool:
         """Check if the dataset has multicollinearity among columns.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         columns : list[str]
             List of column names to check for multicollinearity.
@@ -225,11 +245,13 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({
         ...     'a': [1, 2, 3, 4],
         ...     'b': [2, 4, 6, 8],
         ...     'c': [10, 20, 15, 25]
         ... })
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> stats.does_data_have_multicollinearity(df, ['a', 'b', 'c'])
         True  # 'a' and 'b' are perfectly correlated
@@ -237,12 +259,12 @@ class DatasetStatistics:
         correlated_pairs = self.identify_multicollinearity(df, columns, threshold)
         return len(correlated_pairs) > 0
     
-    def take_column_mean(self, df, column_name):
+    def take_column_mean(self, df: FrameT, column_name: str) -> float:
         """Calculate the mean of a column.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column_name : str
             Name of the column to compute mean for.
@@ -255,19 +277,21 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> stats.take_column_mean(df, 'values')
         3.0
         """
-        return df.select(pl.col(column_name).mean()).value()
+        return float(df.select(nw.col(column_name).mean()).to_numpy()[0, 0])
         
-    def take_column_median(self, df, column_name):
+    def take_column_median(self, df: FrameT, column_name: str) -> float:
         """Calculate the median of a column.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column_name : str
             Name of the column to compute median for.
@@ -280,19 +304,21 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> stats.take_column_median(df, 'values')
         3.0
         """
-        return df.select(pl.col(column_name).median()).value()
+        return float(df.select(nw.col(column_name).median()).to_numpy()[0, 0])
     
-    def take_column_mode(self, df, column_name):
+    def take_column_mode(self, df: FrameT, column_name: str):
         """Calculate the mode of a column.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column_name : str
             Name of the column to compute mode for.
@@ -305,19 +331,23 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({'values': [1, 2, 2, 3, 3, 3, 4]})
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({'values': [1, 2, 2, 3, 3, 3, 4]})
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> stats.take_column_mode(df, 'values')
         3
         """
-        return df.select(pl.col(column_name).mode()).value()
+        # Mode may not be available in all backends via Narwhals, use native
+        native_df = nw.to_native(df)
+        return native_df.select(native_df[column_name].mode()).to_numpy()[0, 0]
     
-    def take_column_std(self, df, column_name):
+    def take_column_std(self, df: FrameT, column_name: str) -> float:
         """Calculate the standard deviation of a column.
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column_name : str
             Name of the column to compute standard deviation for.
@@ -330,11 +360,13 @@ class DatasetStatistics:
         Examples
         --------
         >>> import polars as pl
-        >>> df = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
+        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> std = stats.take_column_std(df, 'values')
         >>> round(std, 2)
         1.58
         """
-        return df.select(pl.col(column_name).std()).value()
+        return float(df.select(nw.col(column_name).std()).to_numpy()[0, 0])
     

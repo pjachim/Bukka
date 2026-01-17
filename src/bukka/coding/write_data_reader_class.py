@@ -1,49 +1,52 @@
 from bukka.utils.files.file_manager import FileManager
 
 CLASS_TEMPLATE = '''
+import narwhals as nw
 import polars as pl
+from narwhals.typing import FrameT
 
 class DataReader:
     """
-    A class to read training and testing data from Parquet files using Polars.
+    A class to read training and testing data from Parquet files using Narwhals.
 
     Attributes:
         train_filepath (str): The file path to the training data Parquet file.
         test_filepath (str): The file path to the testing data Parquet file.
 
     Methods:
-        read_train_data(): Reads and returns the training data as a Polars DataFrame.
-        read_test_data(): Reads and returns the testing data as a Polars DataFrame.
+        read_train_data(): Reads and returns the training data as a Narwhals DataFrame.
+        read_test_data(): Reads and returns the testing data as a Narwhals DataFrame.
     """
     def __init__(self, train_filepath: str = {train_filepath}, test_filepath: str = {test_filepath}):
         self.train_filepath = train_filepath
         self.test_filepath = test_filepath
 
-    def read_train_data(self):
+    def read_train_data(self) -> FrameT:
         """Reads the training data from the training Parquet file."""
         return self._read_file(self.train_filepath)
 
-    def read_test_data(self):
+    def read_test_data(self) -> FrameT:
         """Reads the testing data from the testing Parquet file."""
         return self._read_file(self.test_filepath)
 
-    def _read_file(self, filepath: str):
-        """Reads a Parquet file and returns a Polars DataFrame."""
-        return pl.read_parquet(filepath)
+    def _read_file(self, filepath: str) -> FrameT:
+        """Reads a Parquet file and returns a Narwhals DataFrame."""
+        native_df = pl.read_parquet(filepath)
+        return nw.from_native(native_df)
 
 '''
 
 # These methods are added only if a target column is specified (no need for X/y split for unsupervised tasks)
 ADDITIONAL_SUPERVISED_METHODS = '''
-    def readXy_train(self, target_column: str | None = {target_column}) -> tuple[pl.DataFrame, pl.DataFrame]:
+    def readXy_train(self, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
         """Reads the training data and splits it into features and target."""
         return self._readXy(self.train_filepath, target_column, is_train=True)
 
-    def readXy_test(self, target_column: str | None = {target_column}) -> tuple[pl.DataFrame, pl.DataFrame]:
+    def readXy_test(self, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
         """Reads the testing data and splits it into features and target."""
         return self._readXy(self.test_filepath, target_column, is_train=False)
 
-    def _readXy(self, filepath: str, target_column: str | None = {target_column}, is_train: bool) -> tuple[pl.DataFrame, pl.DataFrame]:
+    def _readXy(self, filepath: str, target_column: str | None = {target_column}, is_train: bool) -> tuple[FrameT, FrameT]:
         """Reads a Parquet file and splits it into features and target."""
         if is_train:
             df = self.read_train_data()
@@ -51,7 +54,7 @@ ADDITIONAL_SUPERVISED_METHODS = '''
             df = self.read_test_data()
 
         X = df.drop([target_column])
-        y = df.select(pl.col(target_column))
+        y = df.select(nw.col(target_column))
         return X, y
 '''
 
