@@ -46,7 +46,7 @@ ADDITIONAL_SUPERVISED_METHODS = '''
         """Reads the testing data and splits it into features and target."""
         return self._readXy(self.test_filepath, target_column, is_train=False)
 
-    def _readXy(self, filepath: str, target_column: str | None = {target_column}, is_train: bool) -> tuple[FrameT, FrameT]:
+    def _readXy(self, filepath: str, is_train: bool, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
         """Reads a Parquet file and splits it into features and target."""
         if is_train:
             df = self.read_train_data()
