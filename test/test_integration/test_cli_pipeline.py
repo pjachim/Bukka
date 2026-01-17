@@ -52,29 +52,30 @@ class TestCLIIntegration:
 
         template = textwrap.dedent(
             f"""
-            from bukka.logistics.environment.environment import EnvironmentBuilder
+            from bukka.environment.environment import EnvironmentBuilder
             EnvironmentBuilder.build_environment = lambda self: None
 
-            # Patch Dataset.__init__ so the Polars backend reads the CSV and
-            # writes minimal parquet train/test files so the rest of the
-            # pipeline generation can proceed.
+            # Patch Dataset.__init__ to use Narwhals-based dataset functionality
+            # to write minimal parquet train/test files for pipeline generation.
             from bukka.data_management import dataset as ds_module
-            from bukka.data_management.wrapper.polars import PolarsOperations
-            import polars as pl
+            from bukka.data_management.dataset_functionality.io import DatasetIO
+            from bukka.data_management.dataset_functionality.management import DatasetManagement
             import pyarrow.parquet as pq
 
-            def _patched_init(self, target_column, file_manager, dataframe_backend='polars', strata=None, stratify=True, train_size=0.8, feature_columns=None):
+            def _patched_init(self, target_column, file_manager, dataframe_backend='polars', backend=None, strata=None, stratify=True, train_size=0.8, feature_columns=None):
                 self.file_manager = file_manager
                 self.target_column = target_column
-                self.backend = PolarsOperations()
                 try:
-                    self.backend.full_df = pl.read_csv(str(self.file_manager.dataset_path))
+                    io = DatasetIO()
+                    full_df = io.load_from_csv(str(self.file_manager.dataset_path))
                 except Exception:
-                    pass
+                    full_df = None
                 train_file = self.file_manager.train_data / 'train.parquet'
                 test_file = self.file_manager.test_data / 'test.parquet'
-                # Use backend splitting which will write parquet files
-                self.backend.split_dataset(train_path=train_file, test_path=test_file, target_column=target_column, strata=strata, train_size=train_size, stratify=stratify)
+                # Use Narwhals-based splitting which will write parquet files
+                if full_df is not None:
+                    mgmt = DatasetManagement()
+                    train_df, _ = mgmt.split_dataset(full_df, train_path=train_file, test_path=test_file, target_column=target_column, strata=strata, train_size=train_size, stratify=stratify)
                 # Build a minimal train_df proxy exposing get_column_names()
                 class _DFProxy:
                     def __init__(self, cols):
@@ -86,7 +87,7 @@ class TestCLIIntegration:
                     cols = [f.name for f in pq.read_schema(train_file)]
                 except Exception:
                     cols = []
-                self.backend.train_df = _DFProxy(cols)
+                self.train_df = _DFProxy(cols)
                 if feature_columns is None:
                     if target_column in cols:
                         self.feature_columns = [c for c in cols if c != target_column]
@@ -109,7 +110,9 @@ class TestCLIIntegration:
             pid_mod.ProblemIdentifier._identify_ml_problem = lambda self: None
 
             from bukka.__main__ import main
-            main(name={repr(str(proj_path))}, dataset={repr(str(csv_path))}, target='target')
+            import sys
+            sys.argv = ['bukka', 'run', '--name', {repr(str(proj_path))}, '--dataset', {repr(str(csv_path))}, '--target', 'target']
+            main()
             """
         )
 
@@ -223,24 +226,26 @@ class TestCLIIntegration:
             f"""
             import runpy, sys
             # Apply same patches as before
-            from bukka.logistics.environment.environment import EnvironmentBuilder
+            from bukka.environment.environment import EnvironmentBuilder
             EnvironmentBuilder.build_environment = lambda self: None
             from bukka.data_management import dataset as ds_module
-            from bukka.data_management.wrapper.polars import PolarsOperations
-            import polars as pl
+            from bukka.data_management.dataset_functionality.io import DatasetIO
+            from bukka.data_management.dataset_functionality.management import DatasetManagement
             import pyarrow.parquet as pq
 
-            def _patched_init(self, target_column, file_manager, dataframe_backend='polars', strata=None, stratify=True, train_size=0.8, feature_columns=None):
+            def _patched_init(self, target_column, file_manager, dataframe_backend='polars', backend=None, strata=None, stratify=True, train_size=0.8, feature_columns=None):
                 self.file_manager = file_manager
                 self.target_column = target_column
-                self.backend = PolarsOperations()
                 try:
-                    self.backend.full_df = pl.read_csv(str(self.file_manager.dataset_path))
+                    io = DatasetIO()
+                    full_df = io.load_from_csv(str(self.file_manager.dataset_path))
                 except Exception:
-                    pass
+                    full_df = None
                 train_file = self.file_manager.train_data / 'train.parquet'
                 test_file = self.file_manager.test_data / 'test.parquet'
-                self.backend.split_dataset(train_path=train_file, test_path=test_file, target_column=target_column, strata=strata, train_size=train_size, stratify=stratify)
+                if full_df is not None:
+                    mgmt = DatasetManagement()
+                    train_df, _ = mgmt.split_dataset(full_df, train_path=train_file, test_path=test_file, target_column=target_column, strata=strata, train_size=train_size, stratify=stratify)
                 class _DFProxy:
                     def __init__(self, cols):
                         self._cols = cols
@@ -250,7 +255,7 @@ class TestCLIIntegration:
                     cols = [f.name for f in pq.read_schema(train_file)]
                 except Exception:
                     cols = []
-                self.backend.train_df = _DFProxy(cols)
+                self.train_df = _DFProxy(cols)
                 if feature_columns is None:
                     if target_column in cols:
                         self.feature_columns = [c for c in cols if c != target_column]
@@ -271,7 +276,7 @@ class TestCLIIntegration:
             pid_mod.ProblemIdentifier._identify_ml_problem = lambda self: None
 
             # Simulate CLI args and run module as __main__
-            sys.argv = ['-m', 'bukka', '--name', {repr(str(proj))}, '--dataset', {repr(str(csv))}, '--target', 'target']
+            sys.argv = ['bukka', 'run', '--name', {repr(str(proj))}, '--dataset', {repr(str(csv))}, '--target', 'target']
             runpy.run_module('bukka', run_name='__main__')
             """
         )
