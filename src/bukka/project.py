@@ -207,7 +207,8 @@ class Project:
         """
         writer = ConfigWriter(
             output_path=self.file_manager.config_path,
-            backend_name=self.backend
+            backend_name=self.backend,
+            file_manager=self.file_manager
         )
         writer.write_config()
         logger.info("Configuration file generation complete", format_level='h4')
