@@ -50,7 +50,9 @@ class ConfigWriter:
         >>> writer.write_config()  # Writes the config file with polars backend
         """
         config_code = CONFIG_TEMPLATE.format(
-            backend_name=self.backend_name
+            backend_name=self.backend_name,
+            train_relative_path=self.file_manager.train_file_relative_path.as_posix(),
+            test_relative_path=self.file_manager.test_file_relative_path.as_posix()
         )
         with open(self.output_path, 'w') as file:
             file.write(config_code)
