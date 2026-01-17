@@ -192,7 +192,7 @@ class Project:
         the logic for loading the dataset, using the project's  `FileManager`.
         The generated class is saved to the project's data readers folder.  
         """
-        writer = DataReaderWriter(self.file_manager)
+        writer = DataReaderWriter(self.file_manager, target_column=self.target_column)
         writer.write_code()
         logger.info("Data reader class generation complete", format_level='h4')
 
@@ -247,7 +247,8 @@ class Project:
         
         starter_notebook_writer = StarterNotebookWriter(
             output_path=str(self.file_manager.starter_notebook_path),
-            venv_path=venv_path
+            venv_path=venv_path,
+            target_column=self.target_column
         )
 
         logger.info("Writing starter notebook")
