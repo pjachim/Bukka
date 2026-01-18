@@ -265,7 +265,8 @@ class Project:
         starter_notebook_writer = StarterNotebookWriter(
             output_path=str(self.file_manager.starter_notebook_path),
             venv_path=venv_path,
-            target_column=self.target_column
+            target_column=self.target_column,
+            problem_type=self.problem_type
         )
 
         logger.info("Writing starter notebook")

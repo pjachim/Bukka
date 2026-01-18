@@ -18,6 +18,9 @@ class StarterNotebookWriter:
     target_column : str | None, optional
         The name of the target column for supervised learning tasks. If None,
         generates notebook code for unsupervised learning.
+    problem_type : str, optional
+        The type of ML problem ('regression', 'classification', 'auto', etc.).
+        Defaults to 'auto'.
 
     Examples
     --------
@@ -28,14 +31,16 @@ class StarterNotebookWriter:
     >>> writer = StarterNotebookWriter(
     ...     output_path="starter_notebook.ipynb",
     ...     venv_path=".venv",
-    ...     target_column="target"
+    ...     target_column="target",
+    ...     problem_type="regression"
     ... )
     >>> writer.write_notebook()  # Writes notebook configured for the venv
     """
-    def __init__(self, output_path: str, venv_path: str | Path | None = None, target_column: str | None = None) -> None:
+    def __init__(self, output_path: str, venv_path: str | Path | None = None, target_column: str | None = None, problem_type: str = "auto") -> None:
         self.output_path = output_path
         self.venv_path = venv_path
         self.target_column = target_column
+        self.problem_type = problem_type
 
     def write_notebook(self) -> None:
         """
@@ -67,8 +72,7 @@ class StarterNotebookWriter:
                 "X_train, y_train = data_reader.readXy_train()\n"
                 "X_test, y_test = data_reader.readXy_test()\n\n"
                 "# Display the first few rows of the training data\n"
-                "# Convert to pandas for display (Narwhals DataFrame -> pandas)\n"
-                "X_train.to_pandas().head()"
+                "X_train.head()"
             ),
             cell_type="code"
         )
@@ -98,6 +102,14 @@ class StarterNotebookWriter:
             cell_type="markdown"
         )
 
+        # Add regression or classification metrics based on problem type
+        if self.problem_type.lower() == "regression":
+            self._add_regression_evaluation_cell(notebook_writer)
+        else:
+            self._add_classification_evaluation_cell(notebook_writer)
+
+    def _add_classification_evaluation_cell(self, notebook_writer) -> None:
+        """Add classification evaluation metrics cell."""
         notebook_writer.add_cell(
             cell_content=(
                 "# Import evaluation metrics\n"
@@ -108,6 +120,27 @@ class StarterNotebookWriter:
                 "# Display detailed classification report\n"
                 "print('\\nClassification Report:')\n"
                 "print(classification_report(y_test, predictions))"
+            ),
+            cell_type="code"
+        )
+
+    def _add_regression_evaluation_cell(self, notebook_writer) -> None:
+        """Add regression evaluation metrics cell."""
+        notebook_writer.add_cell(
+            cell_content=(
+                "# Import evaluation metrics\n"
+                "from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score\n"
+                "import numpy as np\n\n"
+                "# Calculate regression metrics\n"
+                "mae = mean_absolute_error(y_test, predictions)\n"
+                "mse = mean_squared_error(y_test, predictions)\n"
+                "rmse = np.sqrt(mse)\n"
+                "r2 = r2_score(y_test, predictions)\n\n"
+                "# Display regression metrics\n"
+                "print(f'Mean Absolute Error (MAE): {mae:.4f}')\n"
+                "print(f'Mean Squared Error (MSE): {mse:.4f}')\n"
+                "print(f'Root Mean Squared Error (RMSE): {rmse:.4f}')\n"
+                "print(f'R² Score: {r2:.4f}')"
             ),
             cell_type="code"
         )
