@@ -8,6 +8,7 @@ cap_outliers_solution = solution.Solution(
     },
     function_import="from sklearn.preprocessing import RobustScaler",
     function_name="RobustScaler",
+    compatible_types=["int", "float"],
 )
 
 # For ProblemIdentifier compatibility
