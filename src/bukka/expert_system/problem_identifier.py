@@ -92,7 +92,6 @@ class ProblemIdentifier:
                     description=f"The feature '{feature}' contains outlier values.",
                     features=[feature],
                     solutions=[
-                        sol.outlier_solutions.remove_outliers,
                         sol.outlier_solutions.cap_outliers,
                     ],
                     problem_type="transformer",
