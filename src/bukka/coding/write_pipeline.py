@@ -142,6 +142,10 @@ class PipelineWriter(TemplateBaseClass):
         True
         """
         self.imports: set[str] = set()
+        
+        # Add hardcoded imports from the template
+        self.imports.add("from sklearn.pipeline import Pipeline")
+        self.imports.add("from sklearn.compose import ColumnTransformer")
 
         for sol_obj, _ in self.pipeline_steps:
             imp = sol_obj.fetch_import()
@@ -219,9 +223,9 @@ class PipelineWriter(TemplateBaseClass):
         """Build the ColumnTransformer preprocessor code if needed.
 
         This method constructs the ColumnTransformer definition based on
-        the pipeline steps that are transformers. It groups single-column
-        transformers into the ColumnTransformer and leaves multi-column
-        manipulators as separate pipeline steps.
+        the pipeline steps that are transformers. It groups transformers
+        by their target columns and chains multiple transformers on the
+        same columns into a Pipeline.
 
         Returns
         -------
@@ -236,16 +240,35 @@ class PipelineWriter(TemplateBaseClass):
         >>> "ColumnTransformer" in preprocessor_code
         True
         """
-        if self.transformers:
-            ct_items = []
-            for name, var_name, columns in self.transformers:
-                cols_repr = repr(columns) if len(columns) > 1 else repr(columns[0]) if columns else "[]"
-                ct_items.append(f"('{name}', {var_name}, [{cols_repr}])")
-            
-            return SEPARATOR.join(ct_items)
-
-        else:
+        if not self.transformers:
             return ""
+        
+        # Group transformers by their target columns
+        from collections import defaultdict
+        grouped_transformers: dict[tuple[str, ...], list[tuple[str, str]]] = defaultdict(list)
+        
+        for name, var_name, columns in self.transformers:
+            # Convert list to tuple for hashable key
+            col_key = tuple(sorted(columns)) if columns else ()
+            grouped_transformers[col_key].append((name, var_name))
+        
+        ct_items = []
+        for col_key, transformers in grouped_transformers.items():
+            columns = list(col_key)
+            
+            if len(transformers) == 1:
+                # Single transformer for these columns
+                name, var_name = transformers[0]
+                ct_items.append(f"('{name}', {var_name}, {repr(columns)})")
+            else:
+                # Multiple transformers for same columns - chain them in a Pipeline
+                pipe_steps = [f"('{name}', {var_name})" for name, var_name in transformers]
+                pipe_steps_str = SEPARATOR.join(pipe_steps)
+                # Use first transformer name as the pipeline name
+                pipeline_name = f"{transformers[0][0]}_pipeline"
+                ct_items.append(f"('{pipeline_name}', Pipeline([{pipe_steps_str}]), {repr(columns)})")
+        
+        return SEPARATOR.join(ct_items)
 
     def _build_pipeline_str(self) -> str:
         """Build the final pipeline definition string.
