@@ -5,14 +5,8 @@ This test suite validates the refactored PipelineWriter which now:
 - Uses write_code() method instead of write()
 - Separates concerns into _fetch_imports(), _parse_pipeline_steps(), _build_*() methods
 - Distinguishes between transformers (column-specific) and manipulators (multi-column)
-
-Known bugs documented in tests (DO NOT FIX HERE):
-1. FULL_TEMPLATE has hardcoded imports (Pipeline, ColumnTransformer) that aren't
-   exposed in writer.imports, making the imports set incomplete. See
-   test_pipeline_generation_and_import_extraction for details.
-2. Multiple transformers on the same columns create parallel ColumnTransformer entries
-   rather than a chained Pipeline, which may not apply transforms sequentially.
-   See test_multiple_transformers_same_columns for details.
+- Chains multiple transformers on the same columns into a Pipeline
+- Includes hardcoded template imports in writer.imports set
 """
 import importlib
 from types import SimpleNamespace
@@ -80,9 +74,9 @@ class TestPipelineWriter:
         # Verify imports are extracted correctly from solutions
         assert "from sklearn.preprocessing import StandardScaler" in writer.imports
         assert "from sklearn.linear_model import LogisticRegression" in writer.imports
-        # NOTE: BUG - ColumnTransformer and Pipeline imports are hardcoded in FULL_TEMPLATE
-        # but not exposed in writer.imports. This makes writer.imports incomplete.
-        # These should either be added to writer.imports or extracted from the template.
+        # Hardcoded imports from FULL_TEMPLATE should now be in writer.imports
+        assert "from sklearn.pipeline import Pipeline" in writer.imports
+        assert "from sklearn.compose import ColumnTransformer" in writer.imports
 
         # Verify instantiations are created
         assert len(writer.instantiations) == 2
@@ -299,8 +293,12 @@ class TestPipelineWriter:
         output_path = tmp_path / "pipeline.py"
         writer = PipelineWriter(pipeline_steps=[], output_path=output_path)
         
-        # Should have empty collections
-        assert len(writer.imports) == 0
+        # Should have hardcoded template imports even with empty pipeline
+        assert len(writer.imports) == 2
+        assert "from sklearn.pipeline import Pipeline" in writer.imports
+        assert "from sklearn.compose import ColumnTransformer" in writer.imports
+        
+        # Other collections should be empty
         assert len(writer.instantiations) == 0
         assert len(writer.transformers) == 0
         assert len(writer.manipulators) == 0
@@ -341,7 +339,7 @@ class TestPipelineWriter:
         assert len(writer.transformers) == 0
 
     def test_multiple_transformers_same_columns(self, tmp_path):
-        """Test multiple transformers can target the same columns."""
+        """Test multiple transformers can target the same columns and are chained."""
         
         # First transformer
         imputer_sol = Solution(
@@ -386,18 +384,16 @@ class TestPipelineWriter:
         # Both should be in transformers
         assert len(writer.transformers) == 2
         
-        # NOTE: POTENTIAL BUG - Having multiple transformers on the same columns
-        # will create a ColumnTransformer with both, but the second transformer
-        # won't receive the output of the first. This might not be the intended behavior.
-        # Consider if transformers on same columns should be chained in a Pipeline
-        # inside the ColumnTransformer instead.
-        
+        # Multiple transformers on same columns should be chained in a Pipeline
         writer.write_code()
         content = output_path.read_text()
         
-        # Both should appear in the ColumnTransformer
-        assert "('imputer', imputer, ['age', 'income'])" in content
-        assert "('scaler', scaler, ['age', 'income'])" in content
+        # Should have a chained pipeline for the same columns
+        assert "('imputer', imputer)" in content
+        assert "('scaler', scaler)" in content
+        # The transformers should be in a Pipeline within the ColumnTransformer
+        assert "Pipeline([" in content
+        assert "['age', 'income']" in content
 
     def test_instantiation_formatting(self, tmp_path):
         """Test that instantiations are formatted correctly."""

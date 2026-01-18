@@ -86,7 +86,12 @@ class TestStarterNotebookWriter:
             temp_path = f.name
         
         try:
-            writer = StarterNotebookWriter(output_path=temp_path)
+            # Test with supervised learning (regression) to get evaluation cells
+            writer = StarterNotebookWriter(
+                output_path=temp_path,
+                target_column="target",
+                problem_type="regression"
+            )
             writer.write_notebook()
             
             # Read and verify the notebook
@@ -101,7 +106,7 @@ class TestStarterNotebookWriter:
             assert 'Welcome to Your Bukka Project' in cell_contents
             assert 'Data Loading' in cell_contents
             assert 'Running a Pipeline' in cell_contents
-            assert 'Model Evaluation' in cell_contents
+            assert 'Model Evaluation' in cell_contents  # Only in supervised mode
             assert 'DataReader' in cell_contents
             assert 'pipeline' in cell_contents
         finally:

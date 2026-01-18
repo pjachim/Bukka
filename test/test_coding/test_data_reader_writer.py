@@ -13,7 +13,7 @@ class TestDataReaderWriter:
     """Tests for DataReaderWriter class."""
 
     def test_generates_relative_paths(self) -> None:
-        """Test that DataReaderWriter generates relative paths, not absolute."""
+        """Test that DataReaderWriter uses config constants for paths."""
         with tempfile.TemporaryDirectory() as temp_dir:
             project_path = Path(temp_dir) / "test_project"
             
@@ -32,17 +32,13 @@ class TestDataReaderWriter:
             writer = DataReaderWriter(fm)
             code = writer._fill_template()
             
-            # Check that paths are relative, not absolute
-            assert "data/train/train_data.pqt" in code or "data\\train\\train_data.pqt" in code
-            assert "data/test/test_data.pqt" in code or "data\\test\\test_data.pqt" in code
+            # Check that paths use config constants
+            assert "TRAIN_DATASET_PATH" in code
+            assert "TEST_DATASET_PATH" in code
+            assert "from config import" in code
             
             # Check that absolute paths are NOT in the code
             assert str(project_path) not in code
-            assert temp_dir not in code
-            
-            # Verify the paths use forward slashes (cross-platform)
-            assert "data/train/train_data.pqt" in code
-            assert "data/test/test_data.pqt" in code
 
     def test_writes_valid_python_class(self) -> None:
         """Test that the written DataReader class is valid Python."""
