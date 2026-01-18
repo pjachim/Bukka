@@ -240,7 +240,7 @@ class PipelineWriter(TemplateBaseClass):
             ct_items = []
             for name, var_name, columns in self.transformers:
                 cols_repr = repr(columns) if len(columns) > 1 else repr(columns[0]) if columns else "[]"
-                ct_items.append(f"('{name}', {var_name}, {cols_repr})")
+                ct_items.append(f"('{name}', {var_name}, [{cols_repr}])")
             
             return SEPARATOR.join(ct_items)
 
