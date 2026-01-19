@@ -15,6 +15,8 @@ class EnvironmentBuilder:
     ----------
     file_manager : FileManager
         Manager for project file paths and directory structure.
+    enable_mlflow : bool, optional
+        Whether to include MLflow in the environment (default: False).
 
     Examples
     --------
@@ -23,8 +25,9 @@ class EnvironmentBuilder:
     >>> env_builder = EnvironmentBuilder(file_manager)
     >>> env_builder.build_environment()
     """
-    def __init__(self, file_manager: FileManager):
+    def __init__(self, file_manager: FileManager, enable_mlflow: bool = False):
         self.file_manager = file_manager
+        self.enable_mlflow = enable_mlflow
 
 
     def build_environment(self):
@@ -63,10 +66,15 @@ class EnvironmentBuilder:
         Write requirements file and install all required packages.
 
         Creates a requirements.txt file with the standard Bukka dependencies
-        and installs them using pip in the virtual environment.
+        and installs them using pip in the virtual environment. Conditionally
+        includes MLflow if enabled.
         """
+        req_str = requirements.strip()
+        if self.enable_mlflow:
+            req_str += '\nmlflow>=2.0.0'
+        
         with open(self.file_manager.requirements_path, 'w') as f:
-            f.write(requirements.strip())
+            f.write(req_str)
 
         cmd_list = [
             str(self.file_manager.python_path),

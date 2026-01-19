@@ -28,6 +28,8 @@ DEFAULT_CONFIG = {
         "dataset": None,
         "target": None,
         "skip_venv": False,
+        "enable_mlflow": False,
+        "mlflow_tracking_uri": None,
     },
     "data": {
         "backend": "polars",
@@ -71,6 +73,8 @@ class BukkaConfig:
     dataset: str | None = None
     target: str | None = None
     skip_venv: bool = False
+    enable_mlflow: bool = False
+    mlflow_tracking_uri: str | None = None
     
     # Data settings
     backend: str = "polars"
@@ -129,6 +133,8 @@ class BukkaConfig:
             dataset=get_value('dataset', ('project', 'dataset')),
             target=get_value('target', ('project', 'target')),
             skip_venv=get_value('skip_venv', ('project', 'skip_venv'), False),
+            enable_mlflow=get_value('enable_mlflow', ('project', 'enable_mlflow'), False),
+            mlflow_tracking_uri=get_value('mlflow_tracking_uri', ('project', 'mlflow_tracking_uri')),
             backend=get_value('backend', ('data', 'backend'), 'polars'),
             train_size=get_value('train_size', ('data', 'train_size'), 0.8),
             stratify=get_value('stratify', ('data', 'stratify'), True),
@@ -186,6 +192,8 @@ class BukkaConfig:
             'dataset_path': self.dataset,
             'target_column': self.target,
             'skip_venv': self.skip_venv,
+            'enable_mlflow': self.enable_mlflow,
+            'mlflow_tracking_uri': self.mlflow_tracking_uri,
             'backend': self.backend,
             'problem_type': self.problem_type,
             'train_size': self.train_size,
@@ -383,6 +391,8 @@ project:
   dataset: null  # Path to your dataset file (CSV, Parquet, etc.)
   target: null  # Name of the target column in your dataset
   skip_venv: {DEFAULT_CONFIG['project']['skip_venv']}  # Skip virtual environment creation
+  enable_mlflow: {DEFAULT_CONFIG['project']['enable_mlflow']}  # Enable MLflow experiment tracking
+  mlflow_tracking_uri: null  # MLflow tracking URI (default: mlruns/ in project)
 
 # Data processing settings
 data:
