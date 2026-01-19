@@ -9,6 +9,7 @@ from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
 from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
+from bukka.coding.write_config import ConfigWriter
 from bukka.utils.bukka_logger import BukkaLogger
 from bukka.expert_system.pipeline_builder import PipelineBuilder
 
@@ -122,6 +123,7 @@ class Project:
                 stratify=self.stratify
             )
             self._write_data_reader_class()
+            self._write_config()
             self._write_starter_notebook()
         else:
             logger.debug("No dataset path provided, skipping pipeline generation")
@@ -192,9 +194,24 @@ class Project:
         the logic for loading the dataset, using the project's  `FileManager`.
         The generated class is saved to the project's data readers folder.  
         """
-        writer = DataReaderWriter(self.file_manager)
+        writer = DataReaderWriter(self.file_manager, target_column=self.target_column)
         writer.write_code()
         logger.info("Data reader class generation complete", format_level='h4')
+
+    def _write_config(self) -> None:
+        """Generate and write a configuration file for the project.
+
+        This method creates a configuration file (e.g., `config.py`) that
+        contains settings for the project, such as the DataFrame backend to use.
+        The generated file is saved to the project's config folder.
+        """
+        writer = ConfigWriter(
+            output_path=self.file_manager.config_path,
+            backend_name=self.backend,
+            file_manager=self.file_manager
+        )
+        writer.write_config()
+        logger.info("Configuration file generation complete", format_level='h4')
 
     def _build_skeleton(self) -> None:
         """
@@ -247,7 +264,9 @@ class Project:
         
         starter_notebook_writer = StarterNotebookWriter(
             output_path=str(self.file_manager.starter_notebook_path),
-            venv_path=venv_path
+            venv_path=venv_path,
+            target_column=self.target_column,
+            problem_type=self.problem_type
         )
 
         logger.info("Writing starter notebook")

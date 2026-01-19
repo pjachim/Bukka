@@ -47,6 +47,8 @@ class FileManager:
         Path for the 'README.md' file.
     gitignore_path : Path
         Path for the '.gitignore' file.
+    config_path : Path
+        Path for the 'config.py' file.
     """
     def __init__(
         self,
@@ -85,6 +87,10 @@ class FileManager:
         """
         # Data related paths
         self.data_path: Path = self.project_path / 'data'
+
+        self.train_file_relative_path: Path = Path('data') / 'train' / 'train_data.pqt'
+        self.test_file_relative_path: Path = Path('data') / 'test' / 'test_data.pqt'
+
         self.train_data: Path = self.data_path / 'train'
         self.test_data: Path = self.data_path / 'test'
 
@@ -99,6 +105,7 @@ class FileManager:
 
         # Other top-level paths
         self.virtual_env: Path = self.project_path / '.venv'
+        self.config_path: Path = self.project_path / 'config.py'
         # Utils path (treated as a Python package)
         self.utils: Path = self.project_path / 'utils'
         self.data_reader_path: Path = self.utils / 'data_reader.py'

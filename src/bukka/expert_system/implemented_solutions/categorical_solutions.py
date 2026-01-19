@@ -9,6 +9,7 @@ onehotencoder_solution = solution.Solution(
     },
     function_import="from sklearn.preprocessing import OneHotEncoder",
     function_name="OneHotEncoder",
+    compatible_types=["string"],
 )
 
 standardize_categories_solution = solution.Solution(
@@ -17,6 +18,7 @@ standardize_categories_solution = solution.Solution(
     function_kwargs={},
     function_import="from bukka.preprocessing.categorical import standardize_categories",
     function_name="standardize_categories",
+    compatible_types=["string"],
 )
 
 encode_categories_solution = solution.Solution(
@@ -27,6 +29,7 @@ encode_categories_solution = solution.Solution(
     },
     function_import="from bukka.preprocessing.categorical import encode_categories",
     function_name="encode_categories",
+    compatible_types=["string"],
 )
 
 # For ProblemIdentifier compatibility

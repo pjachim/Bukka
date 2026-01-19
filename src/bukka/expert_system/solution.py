@@ -15,6 +15,9 @@ class Solution:
         A dictionary of keyword arguments to be passed to the function or transformer.
     explanation : str, optional
         A description or explanation of the solution (default is an empty string).
+    compatible_types : list[str] | None, optional
+        A list of column data types this solution is compatible with (e.g., ['int', 'float']).
+        If None, defaults to all types (['int', 'float', 'string']) (default is None).
 
     Attributes
     ----------
@@ -28,14 +31,20 @@ class Solution:
         A dictionary of keyword arguments to be passed to the function or transformer.
     explanation : str
         A description or explanation of the solution.
+    compatible_types : list[str]
+        A list of column data types this solution is compatible with.
+    compatible_types : list[str] | None
+        A list of column data types this solution is compatible with (e.g., ['int', 'float']).
+        If None, defaults to all types (['int', 'float', 'string']).
     """
 
-    def __init__(self, name: str, function_import: str, function_name: str, function_kwargs: dict, explanation: str = ""):
+    def __init__(self, name: str, function_import: str, function_name: str, function_kwargs: dict, explanation: str = "", compatible_types: list[str] | None = None):
         self.name = name
         self.function_import = function_import
         self.function_name = function_name
         self.function_kwargs = function_kwargs
         self.explanation = explanation
+        self.compatible_types = compatible_types if compatible_types is not None else ["int", "float", "string"]  # Default: compatible with all types
 
     def fetch_pipeline_step(self) -> str:
         """

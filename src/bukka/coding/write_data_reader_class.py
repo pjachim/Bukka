@@ -3,6 +3,7 @@ from bukka.utils.files.file_manager import FileManager
 CLASS_TEMPLATE = '''
 import narwhals as nw
 import polars as pl
+from config import DATAFRAME_BACKEND, TRAIN_DATASET_PATH, TEST_DATASET_PATH
 from narwhals.typing import FrameT
 
 class DataReader:
@@ -17,22 +18,22 @@ class DataReader:
         read_train_data(): Reads and returns the training data as a Narwhals DataFrame.
         read_test_data(): Reads and returns the testing data as a Narwhals DataFrame.
     """
-    def __init__(self, train_filepath: str = {train_filepath}, test_filepath: str = {test_filepath}):
+    def __init__(self, train_filepath: str = TRAIN_DATASET_PATH, test_filepath: str = TEST_DATASET_PATH):
         self.train_filepath = train_filepath
         self.test_filepath = test_filepath
+        self.dataframe_backend = DATAFRAME_BACKEND
 
     def read_train_data(self) -> FrameT:
         """Reads the training data from the training Parquet file."""
-        return self._read_file(self.train_filepath)
+        return self._read_file(self.train_filepath).to_native()
 
     def read_test_data(self) -> FrameT:
         """Reads the testing data from the testing Parquet file."""
-        return self._read_file(self.test_filepath)
+        return self._read_file(self.test_filepath).to_native()
 
     def _read_file(self, filepath: str) -> FrameT:
         """Reads a Parquet file and returns a Narwhals DataFrame."""
-        native_df = pl.read_parquet(filepath)
-        return nw.from_native(native_df)
+        return nw.read_parquet(filepath, backend=self.dataframe_backend)
 
 '''
 
@@ -40,22 +41,23 @@ class DataReader:
 ADDITIONAL_SUPERVISED_METHODS = '''
     def readXy_train(self, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
         """Reads the training data and splits it into features and target."""
-        return self._readXy(self.train_filepath, target_column, is_train=True)
+        return self._readXy(self.train_filepath, is_train=True, target_column=target_column)
 
     def readXy_test(self, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
         """Reads the testing data and splits it into features and target."""
-        return self._readXy(self.test_filepath, target_column, is_train=False)
+        return self._readXy(self.test_filepath, is_train=False, target_column=target_column)
 
-    def _readXy(self, filepath: str, target_column: str | None = {target_column}, is_train: bool) -> tuple[FrameT, FrameT]:
+    def _readXy(self, filepath: str, is_train: bool, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
         """Reads a Parquet file and splits it into features and target."""
         if is_train:
-            df = self.read_train_data()
+            df = nw.from_native(self.read_train_data())
         else:
-            df = self.read_test_data()
+            df = nw.from_native(self.read_test_data())
 
         X = df.drop([target_column])
         y = df.select(nw.col(target_column))
-        return X, y
+        
+        return X.to_native(), y.to_native()
 '''
 
 class DataReaderWriter:
@@ -116,8 +118,6 @@ class DataReaderWriter:
         train_rel = self.file_manager.train_data_file.relative_to(self.file_manager.project_path)
         test_rel = self.file_manager.test_data_file.relative_to(self.file_manager.project_path)
         filled_template = filled_template.format(
-            train_filepath=repr(str(train_rel).replace('\\', '/')),
-            test_filepath=repr(str(test_rel).replace('\\', '/')),
             target_column=repr(self.target_column)
         )
         return filled_template
