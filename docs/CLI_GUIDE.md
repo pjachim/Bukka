@@ -20,13 +20,14 @@ The Bukka CLI provides a robust interface for creating machine learning project 
 - ✅ YAML configuration files
 - ✅ Multiple dataframe backends (Polars, Pandas, Modin, cuDF, Dask, PyArrow)
 - ✅ Problem type specification (classification, regression, clustering)
+- ✅ MLflow experiment tracking integration
 - ✅ Comprehensive input validation
 - ✅ Detailed help documentation
 
 ## Installation
 
 ```bash
-pip install -e .
+pip install bukka
 ```
 
 Make sure PyYAML is installed (it's included in the dependencies).
@@ -68,6 +69,8 @@ python -m bukka run [OPTIONS]
 - `--dataset, -d`: Path to dataset file (CSV, Parquet, etc.)
 - `--target, -t`: Name of the target column (omit for clustering)
 - `--skip-venv, -sv`: Skip virtual environment creation
+- `--mlflow`: Enable MLflow experiment tracking
+- `--mlflow-tracking-uri`: MLflow tracking URI (default: mlruns/ in project directory)
 
 **Data Processing:**
 - `--backend, -b`: Dataframe backend (default: polars)
@@ -99,6 +102,8 @@ project:
   dataset: data/train.csv
   target: target_column
   skip_venv: false
+  enable_mlflow: false  # Enable MLflow experiment tracking
+  mlflow_tracking_uri: null  # Optional: custom MLflow tracking URI
 
 # Data processing settings
 data:
@@ -174,6 +179,24 @@ python -m bukka run --config my_config.yaml
 ```bash
 python -m bukka run -n stratified_proj -d data.csv -t outcome \
   --strata gender age_group --backend polars
+```
+
+### 8. Enable MLflow experiment tracking
+
+```bash
+python -m bukka run -n tracked_project -d data.csv -t target \
+  --mlflow --backend polars
+```
+
+MLflow will be configured automatically with:
+- Tracking URI: `file:///mlruns` in your project directory
+- Experiment name: `{project_name}_experiment`
+- MLflow setup file: `mlflow_setup.py` for easy configuration
+
+After project creation, view your experiments with:
+```bash
+cd tracked_project
+mlflow ui
 ```
 
 ## Input Validation

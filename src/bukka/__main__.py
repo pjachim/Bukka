@@ -223,6 +223,17 @@ For more information, visit: https://github.com/pjachim/Bukka
         action='store_true',
         help='Skip virtual environment creation'
     )
+    project_group.add_argument(
+        '--mlflow',
+        dest='enable_mlflow',
+        action='store_true',
+        help='Enable MLflow experiment tracking'
+    )
+    project_group.add_argument(
+        '--mlflow-tracking-uri',
+        type=str,
+        help='MLflow tracking URI (default: mlruns/ in project directory)'
+    )
     
     # Data processing settings
     data_group = run_parser.add_argument_group('data processing')

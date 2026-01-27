@@ -122,6 +122,10 @@ class FileManager:
         self.readme_path: Path = self.project_path / 'README.md'
         self.gitignore_path: Path = self.project_path / '.gitignore'
         self.pyproject_toml_path: Path = self.project_path / 'pyproject.toml'
+        
+        # MLflow paths
+        self.mlruns_path: Path = self.project_path / 'mlruns'
+        self.mlflow_setup_path: Path = self.project_path / 'mlflow_setup.py'
 
     def _make_path(self, path: Path) -> None:
         """

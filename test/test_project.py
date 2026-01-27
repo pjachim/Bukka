@@ -386,3 +386,161 @@ class TestProjectRun:
         
         # Verify environ_manager was never created
         assert proj.environ_manager is None
+
+class TestProjectMLflowIntegration:
+    """Test suite for Project MLflow integration."""
+    
+    def test_project_initialization_with_mlflow_enabled(self):
+        """Test Project initialization with MLflow enabled."""
+        proj = Project(
+            name="test_project",
+            enable_mlflow=True
+        )
+        
+        assert proj.enable_mlflow is True
+        assert proj.mlflow_tracking_uri is None
+    
+    def test_project_initialization_with_mlflow_and_custom_uri(self):
+        """Test Project initialization with MLflow and custom tracking URI."""
+        proj = Project(
+            name="test_project",
+            enable_mlflow=True,
+            mlflow_tracking_uri="http://localhost:5000"
+        )
+        
+        assert proj.enable_mlflow is True
+        assert proj.mlflow_tracking_uri == "http://localhost:5000"
+    
+    @patch('bukka.project.EnvironmentBuilder')
+    @patch('bukka.project.FileManager')
+    def test_environment_builder_receives_mlflow_flag(
+        self,
+        mock_file_manager_class,
+        mock_env_builder_class
+    ):
+        """Test that EnvironmentBuilder receives enable_mlflow flag."""
+        mock_fm = MagicMock()
+        mock_file_manager_class.return_value = mock_fm
+        
+        proj = Project(name="test", enable_mlflow=True)
+        proj.run()
+        
+        # Verify EnvironmentBuilder was called with enable_mlflow=True
+        mock_env_builder_class.assert_called_once_with(
+            file_manager=mock_fm,
+            enable_mlflow=True
+        )
+    
+    @patch('bukka.project.ConfigWriter')
+    @patch('bukka.project.StarterNotebookWriter')
+    @patch('bukka.project.DataReaderWriter')
+    @patch('bukka.project.PipelineWriter')
+    @patch('bukka.project.Dataset')
+    @patch('bukka.project.EnvironmentBuilder')
+    @patch('bukka.project.PyprojectTomlWriter')
+    @patch('bukka.project.FileManager')
+    def test_write_mlflow_setup_called_when_enabled(
+        self,
+        mock_fm_class,
+        mock_toml_class,
+        mock_env_class,
+        mock_dataset_class,
+        mock_pipeline_class,
+        mock_data_reader_class,
+        mock_notebook_class,
+        mock_config_class
+    ):
+        """Test that _write_mlflow_setup is called when MLflow is enabled."""
+        # Setup mocks
+        mock_fm = MagicMock()
+        mock_fm.mlruns_path = MagicMock()
+        mock_fm.mlruns_path.mkdir = MagicMock()
+        mock_fm_class.return_value = mock_fm
+        
+        # Create a temporary dataset file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            dataset_path = f.name
+        
+        try:
+            proj = Project(
+                name="test",
+                dataset_path=dataset_path,
+                target_column="target",
+                enable_mlflow=True
+            )
+            
+            # Patch the _write_mlflow_setup method to verify it's called
+            with patch.object(proj, '_write_mlflow_setup') as mock_mlflow_setup:
+                proj.run()
+                
+                # Verify _write_mlflow_setup was called
+                mock_mlflow_setup.assert_called_once()
+        finally:
+            # Cleanup
+            Path(dataset_path).unlink(missing_ok=True)
+    
+    @patch('bukka.project.ConfigWriter')
+    @patch('bukka.project.StarterNotebookWriter')
+    @patch('bukka.project.DataReaderWriter')
+    @patch('bukka.project.PipelineWriter')
+    @patch('bukka.project.Dataset')
+    @patch('bukka.project.EnvironmentBuilder')
+    @patch('bukka.project.PyprojectTomlWriter')
+    @patch('bukka.project.FileManager')
+    def test_write_mlflow_setup_not_called_when_disabled(
+        self,
+        mock_fm_class,
+        mock_toml_class,
+        mock_env_class,
+        mock_dataset_class,
+        mock_pipeline_class,
+        mock_data_reader_class,
+        mock_notebook_class,
+        mock_config_class
+    ):
+        """Test that _write_mlflow_setup is NOT called when MLflow is disabled."""
+        # Setup mocks
+        mock_fm = MagicMock()
+        mock_fm_class.return_value = mock_fm
+        
+        # Create a temporary dataset file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            dataset_path = f.name
+        
+        try:
+            proj = Project(
+                name="test",
+                dataset_path=dataset_path,
+                target_column="target",
+                enable_mlflow=False
+            )
+            
+            # Patch the _write_mlflow_setup method to verify it's NOT called
+            with patch.object(proj, '_write_mlflow_setup') as mock_mlflow_setup:
+                proj.run()
+                
+                # Verify _write_mlflow_setup was NOT called
+                mock_mlflow_setup.assert_not_called()
+        finally:
+            # Cleanup
+            Path(dataset_path).unlink(missing_ok=True)
+    
+    @patch('bukka.coding.write_mlflow_setup.MLflowSetupWriter')
+    @patch('bukka.project.FileManager')
+    def test_write_mlflow_setup_creates_directory(
+        self,
+        mock_fm_class,
+        mock_mlflow_writer_class
+    ):
+        """Test that _write_mlflow_setup creates mlruns directory."""
+        mock_fm = MagicMock()
+        mock_mlruns_path = MagicMock()
+        mock_fm.mlruns_path = mock_mlruns_path
+        mock_fm_class.return_value = mock_fm
+        
+        proj = Project(name="test", enable_mlflow=True)
+        proj.file_manager = mock_fm
+        proj._write_mlflow_setup()
+        
+        # Verify mlruns directory creation was called
+        mock_mlruns_path.mkdir.assert_called_once_with(exist_ok=True)
