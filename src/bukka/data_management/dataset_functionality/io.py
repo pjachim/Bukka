@@ -182,5 +182,5 @@ class DatasetIO:
         Path(file_path).parent.mkdir(parents=True, exist_ok=True)
         
         # Convert back to native for I/O operations
-        native_df = nw.to_native(df)
+        native_df = nw.from_native(df)
         native_df.write_parquet(file_path, **(write_kwargs or {}))

@@ -27,7 +27,7 @@ class TestProjectInitialization:
         assert proj.file_manager is None
         assert proj.environ_manager is None
         assert proj.skip_venv is False
-        assert proj.backend == "pyarrow"
+        assert proj.backend == "polars"
         assert proj.problem_type == "auto"
         assert proj.train_size == 0.8
         assert proj.stratify is True

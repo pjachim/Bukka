@@ -1,5 +1,4 @@
 from bukka.utils.files import file_manager
-import pyarrow.parquet as pq
 from bukka.utils.bukka_logger import BukkaLogger
 from bukka.data_management.dataset_functionality import (
     DatasetStatistics,
@@ -73,7 +72,7 @@ class Dataset:
             stratify=True,
             train_size=0.8,
             feature_columns: list[str] | None = None,
-            backend: str = "pyarrow"
+            backend: str = "polars"
         ):
         self.io = DatasetIO()
         self.management = DatasetManagement()
@@ -137,9 +136,9 @@ class Dataset:
             self.feature_columns = feature_columns
 
         logger.debug(f"Reading schema from: {self.file_manager.train_data_file}")
-        schema = pq.read_schema(self.file_manager.train_data_file)
-        # Convert pyarrow.Schema to a plain dict of column_name -> pyarrow.DataType
-        self.data_schema = {field.name: field.type for field in schema}
+
+        self.data_schema = self.train_df.schema
+        
         logger.debug(f"Schema loaded with {len(self.data_schema)} columns")
         logger.debug("Dataset initialization complete")
     
