@@ -40,7 +40,7 @@ class TestDataset:
         from bukka.data_management.dataset_functionality import DatasetIO
         
         test_df = create_dummy_dataframe('target')
-        monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path: test_df)
+        monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path, backend=None: test_df)
 
         dset = Dataset(target_column='target', file_manager=fm, train_size=0.5)
 
@@ -66,7 +66,7 @@ class TestDataset:
         from bukka.data_management.dataset_functionality import DatasetIO
         
         test_df = create_dummy_dataframe('target')
-        monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path: test_df)
+        monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path, backend=None: test_df)
 
         dset = Dataset(target_column='target', file_manager=fm, train_size=0.5)
 
@@ -88,7 +88,7 @@ class TestDataset:
         from bukka.data_management.dataset_functionality import DatasetIO
         
         test_df = create_dummy_dataframe('target')
-        monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path: test_df)
+        monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path, backend=None: test_df)
 
         # Provide explicit feature columns
         dset = Dataset(

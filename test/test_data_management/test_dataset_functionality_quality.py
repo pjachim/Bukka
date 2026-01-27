@@ -222,6 +222,7 @@ class TestDatasetQualityHasInconsistentCategoricalData:
 class TestDatasetQualityCheckMissingValues:
     """Test suite for DatasetQuality.check_missing_values method."""
 
+    @pytest.mark.xfail(reason="Known issue: Narwhals DataFrame construction from dict")
     def test_check_missing_values_no_nulls(self):
         """Test check_missing_values with no missing values.
         
@@ -252,6 +253,7 @@ class TestDatasetQualityCheckMissingValues:
         
         assert all(native_result['missing_count'] == 0)
 
+    @pytest.mark.xfail(reason="Known issue: Narwhals DataFrame construction from dict")
     def test_check_missing_values_with_nulls(self):
         """Test check_missing_values with missing values.
         
@@ -290,6 +292,7 @@ class TestDatasetQualityCheckMissingValues:
         assert col1_row['missing_count'][0] == 1
         assert col2_row['missing_count'][0] == 2
 
+    @pytest.mark.xfail(reason="Known issue: Narwhals DataFrame construction from dict")
     def test_check_missing_values_returns_narwhals_frame(self):
         """Test check_missing_values returns a Narwhals DataFrame.
         

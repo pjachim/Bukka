@@ -51,7 +51,7 @@ class TestDatasetIOLoadFromCSV:
         
         try:
             io = DatasetIO()
-            df = io.load_from_csv(csv_path)
+            df = io.load_from_csv(csv_path, backend='polars')
             
             # Verify it's a Narwhals frame (has Narwhals methods)
             assert hasattr(df, 'schema')
@@ -82,7 +82,7 @@ class TestDatasetIOLoadFromCSV:
         
         try:
             io = DatasetIO()
-            df = io.load_from_csv(csv_path, pl_kwargs={'separator': ';'})
+            df = io.load_from_csv(csv_path, backend='polars', read_kwargs={'separator': ';'})
             
             assert len(df) == 2
             schema = df.schema
@@ -116,7 +116,7 @@ class TestDatasetIOLoadFromCSV:
         
         try:
             io = DatasetIO()
-            df = io.load_from_csv(csv_path)
+            df = io.load_from_csv(csv_path, backend='polars')
             native_df = nw.to_native(df)
             
             assert native_df['a'].to_list() == [10, 30]
@@ -157,7 +157,7 @@ class TestDatasetIOLoadFromParquet:
         
         try:
             io = DatasetIO()
-            loaded_df = io.load_from_parquet(parquet_path)
+            loaded_df = io.load_from_parquet(parquet_path, backend='polars')
             
             assert hasattr(loaded_df, 'schema')
             assert len(loaded_df) == 2
@@ -193,7 +193,7 @@ class TestDatasetIOLoadFromParquet:
         
         try:
             io = DatasetIO()
-            loaded_df = io.load_from_parquet(parquet_path)
+            loaded_df = io.load_from_parquet(parquet_path, backend='polars')
             native = nw.to_native(loaded_df)
             
             assert native['col1'].to_list() == [100, 200]
@@ -229,7 +229,7 @@ class TestDatasetIOLoadFromFile:
         
         try:
             io = DatasetIO()
-            df = io.load_from_file(csv_path, file_type='csv')
+            df = io.load_from_file(csv_path, file_type='csv', backend='polars')
             assert len(df) == 1
         finally:
             Path(csv_path).unlink()
@@ -262,7 +262,7 @@ class TestDatasetIOLoadFromFile:
         
         try:
             io = DatasetIO()
-            loaded = io.load_from_file(parquet_path, file_type='parquet')
+            loaded = io.load_from_file(parquet_path, file_type='parquet', backend='polars')
             assert len(loaded) == 2
         finally:
             Path(parquet_path).unlink()

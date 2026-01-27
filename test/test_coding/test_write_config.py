@@ -77,7 +77,7 @@ class TestConfigWriterInitialization:
         )
         
         assert writer.output_path == "config.py"
-        assert writer.backend_name == "polars"
+        assert writer.backend_name == "pyarrow"
         assert writer.file_manager is file_manager
 
     def test_config_writer_accepts_different_backends(self):

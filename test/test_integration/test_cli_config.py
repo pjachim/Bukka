@@ -213,7 +213,7 @@ class TestConfigManager:
                 'skip_venv': True
             },
             'data': {
-                'backend': 'pandas',
+                'backend': 'pyarrow',
                 'train_size': 0.7,
                 'stratify': False,
                 'strata': None
@@ -229,7 +229,7 @@ class TestConfigManager:
         loaded_config = ConfigManager.load_config(config_path)
         
         assert loaded_config['project']['name'] == 'test_project'
-        assert loaded_config['data']['backend'] == 'pandas'
+        assert loaded_config['data']['backend'] == 'pyarrow'
         assert loaded_config['data']['train_size'] == 0.7
         assert loaded_config['problem']['type'] == 'regression'
 
