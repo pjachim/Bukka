@@ -6,6 +6,7 @@ in machine learning pipelines.
 
 from typing import Any
 import numpy as np
+import narwhals as nw
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
@@ -92,36 +93,35 @@ class standardize_categories(BaseEstimator, TransformerMixin):
         array-like or DataFrame
             Transformed data with standardized categorical values.
         """
-        import pandas as pd
-        
-        # Convert to DataFrame if needed
-        if not isinstance(X, pd.DataFrame):
-            X_df = pd.DataFrame(X)
-        else:
-            X_df = X.copy()
+        # Convert to Narwhals DataFrame
+        df = nw.from_native(X)
         
         # Apply transformations to each column
-        for col in X_df.columns:
+        for col in df.columns:
             # Convert to string
-            X_df[col] = X_df[col].astype(str)
+            col_expr = nw.col(col).cast(nw.String)
             
             # Strip whitespace
             if self.strip_whitespace:
-                X_df[col] = X_df[col].str.strip()
+                col_expr = col_expr.str.strip_chars()
             
             # Apply case normalization
             if self.case == 'lower':
-                X_df[col] = X_df[col].str.lower()
+                col_expr = col_expr.str.to_lowercase()
             elif self.case == 'upper':
-                X_df[col] = X_df[col].str.upper()
+                col_expr = col_expr.str.to_uppercase()
             elif self.case == 'title':
-                X_df[col] = X_df[col].str.title()
+                col_expr = col_expr.str.to_titlecase()
             
-            # Apply custom mapping
+            # Apply custom mapping using nested when-then for each mapping
             if self.custom_mapping:
-                X_df[col] = X_df[col].replace(self.custom_mapping)
+                for old_val, new_val in self.custom_mapping.items():
+                    col_expr = nw.when(col_expr == old_val).then(nw.lit(new_val)).otherwise(col_expr)
+            
+            df = df.with_columns(col_expr.alias(col))
         
-        return X_df
+        # Return as native type
+        return nw.to_native(df)
 
 
 class encode_categories(BaseEstimator, TransformerMixin):
@@ -191,23 +191,22 @@ class encode_categories(BaseEstimator, TransformerMixin):
         self
             Returns self with fitted mappings.
         """
-        import pandas as pd
-        
-        # Convert to DataFrame if needed
-        if not isinstance(X, pd.DataFrame):
-            X_df = pd.DataFrame(X)
-        else:
-            X_df = X
+        # Convert to Narwhals DataFrame
+        df = nw.from_native(X)
         
         # Build mappings for each column
-        for col in X_df.columns:
+        for col in df.columns:
             if self.encoding_type == 'ordinal' and col in self.categories:
                 # Use user-specified order
                 cats = self.categories[col]
                 self.mappings_[col] = {cat: i for i, cat in enumerate(cats)}
             else:
                 # Use alphabetical order (label encoding)
-                unique_cats = sorted(X_df[col].dropna().unique())
+                unique_cats = sorted(
+                    df.select(nw.col(col).drop_nulls().unique())
+                    .to_native()
+                    .to_dict(as_series=False)[col]
+                )
                 self.mappings_[col] = {cat: i for i, cat in enumerate(unique_cats)}
         
         return self
@@ -225,19 +224,20 @@ class encode_categories(BaseEstimator, TransformerMixin):
         array-like or DataFrame
             Transformed data with numerical codes.
         """
-        import pandas as pd
-        
-        # Convert to DataFrame if needed
-        if not isinstance(X, pd.DataFrame):
-            X_df = pd.DataFrame(X)
-        else:
-            X_df = X.copy()
+        # Convert to Narwhals DataFrame
+        df = nw.from_native(X)
         
         # Apply mappings
-        for col in X_df.columns:
+        for col in df.columns:
             if col in self.mappings_:
-                X_df[col] = X_df[col].map(self.mappings_[col])
-                # Fill unmapped values with -1
-                X_df[col] = X_df[col].fillna(-1).astype(int)
+                mapping = self.mappings_[col]
+                # Create a when-then chain for all mappings
+                col_expr = nw.col(col)
+                for cat, code in mapping.items():
+                    col_expr = nw.when(col_expr == cat).then(nw.lit(code)).otherwise(col_expr)
+                # Map unmapped values to -1
+                col_expr = nw.when(col_expr == nw.col(col)).then(nw.lit(-1)).otherwise(col_expr)
+                df = df.with_columns(col_expr.cast(nw.Int32).alias(col))
         
-        return X_df
+        # Return as native type
+        return nw.to_native(df)
