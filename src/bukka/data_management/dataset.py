@@ -73,7 +73,7 @@ class Dataset:
             stratify=True,
             train_size=0.8,
             feature_columns: list[str] | None = None,
-            backend: str = "polars"
+            backend: str = "pyarrow"
         ):
         self.io = DatasetIO()
         self.management = DatasetManagement()
@@ -88,7 +88,7 @@ class Dataset:
         dataset_path = getattr(self.file_manager, 'dataset_path', None)
         if dataset_path is not None and dataset_path.exists():
             logger.debug(f"Loading dataset from: {dataset_path}")
-            df = self.io.load_from_file(dataset_path)
+            df = self.io.load_from_file(dataset_path, backend=self.backend)
             
             # Ensure we have a Narwhals DataFrame (for compatibility with tests/mocks)
             if not hasattr(df, '__narwhals_dataframe__'):
@@ -285,7 +285,7 @@ class Dataset:
         Returns
         -------
         str
-            The simplified data type: 'int', 'float', 'string', or polars type name.
+            The simplified data type: 'int', 'float', 'string', or backend-specific type name.
         
         Examples
         --------

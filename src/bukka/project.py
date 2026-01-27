@@ -36,7 +36,7 @@ class Project:
     mlflow_tracking_uri : str | None, optional
         MLflow tracking URI (optional). Defaults to file-based tracking in mlruns/.
     backend : str, optional
-        Dataframe backend to use (e.g., 'polars', 'pandas'). Defaults to 'polars'.
+        Dataframe backend to use via Narwhals (e.g., 'pyarrow', 'modin', 'cudf', 'dask'). Defaults to 'pyarrow'.
     problem_type : str, optional
         ML problem type specification. Defaults to 'auto'.
     train_size : float, optional
@@ -52,7 +52,7 @@ class Project:
     ...     name="my_project",
     ...     dataset_path="data.csv",
     ...     target_column="target",
-    ...     backend="polars",
+    ...     backend="pyarrow",
     ...     problem_type="binary_classification"
     ... )
     >>> proj.run()
@@ -74,7 +74,7 @@ class Project:
             skip_venv: bool = False,
             enable_mlflow: bool = False,
             mlflow_tracking_uri: str | None = None,
-            backend: str = "polars",
+            backend: str = "pyarrow",
             problem_type: str = "auto",
             train_size: float = 0.8,
             stratify: bool = True,
@@ -89,7 +89,7 @@ class Project:
             skip_venv: Whether to skip virtual environment creation.
             enable_mlflow: Whether to enable MLflow experiment tracking.
             mlflow_tracking_uri: MLflow tracking URI (optional).
-            backend: Dataframe backend to use (default: 'polars').
+            backend: Dataframe backend to use (default: 'pyarrow').
             problem_type: ML problem type (default: 'auto').
             train_size: Train/test split ratio (default: 0.8).
             stratify: Whether to stratify the split (default: True).
@@ -158,7 +158,7 @@ class Project:
     def _write_pipeline(
             self,
             target_column: str,
-            dataframe_backend: str = "polars",
+            dataframe_backend: str = "pyarrow",
             strata: list[str] | None = None,
             stratify: bool = True,
         ):
@@ -177,7 +177,7 @@ class Project:
                 backend supports a None target — otherwise provide the
                 appropriate column name).
             dataframe_backend: The dataframe backend to use when creating
-                the `Dataset` (default: `'polars'`).
+                the `Dataset` (default: `'pyarrow'`).
 
         Returns:
             The absolute path (string) of the written pipeline file.

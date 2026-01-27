@@ -32,14 +32,12 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({
+        >>> df = nw.DataFrame({
         ...     'a': [1, 2, 3, 4, 5],
         ...     'b': [2, 4, 6, 8, 10],
         ...     'c': [5, 4, 3, 2, 1]
         ... })
-        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> pairs = stats.identify_multicollinearity(df, ['a', 'b', 'c'])
         >>> # Returns pairs where abs(correlation) > 0.8
@@ -82,10 +80,8 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({'values': [1, 5, 10, 100]})
-        >>> df = nw.from_native(native_df)
+        >>> df = nw.DataFrame({'values': [1, 5, 10, 100]})
         >>> stats = DatasetStatistics()
         >>> scale = stats.varied_scale(df, 'values')
         >>> scale
@@ -115,10 +111,8 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({'prices': [10, 20, 1000]})
-        >>> df = nw.from_native(native_df)
+        >>> df = nw.DataFrame({'prices': [10, 20, 1000]})
         >>> stats = DatasetStatistics()
         >>> stats.does_data_have_varied_scale(df, 'prices', 100)
         True
@@ -148,15 +142,12 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 100]})
-        >>> df = nw.from_native(native_df)
+        >>> df = nw.DataFrame({'values': [1, 2, 3, 4, 100]})
         >>> stats = DatasetStatistics()
         >>> stats.does_data_have_outliers(df, 'values')
         True
-        >>> native_df2 = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
-        >>> df2 = nw.from_native(native_df2)
+        >>> df2 = nw.DataFrame({'values': [1, 2, 3, 4, 5]})
         >>> stats.does_data_have_outliers(df2, 'values')
         False
         """
@@ -186,10 +177,8 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 100]})
-        >>> df = nw.from_native(native_df)
+        >>> df = nw.DataFrame({'values': [1, 2, 3, 4, 100]})
         >>> stats = DatasetStatistics()
         >>> stats.has_outliers(df, 'values')
         True
@@ -213,10 +202,8 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({'values': [1, 2, 2, 3, 3, 3]})
-        >>> df = nw.from_native(native_df)
+        >>> df = nw.DataFrame({'values': [1, 2, 2, 3, 3, 3]})
         >>> stats = DatasetStatistics()
         >>> stats.get_unq_count(df, 'values')
         3
@@ -244,14 +231,12 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({
+        >>> df = nw.DataFrame({
         ...     'a': [1, 2, 3, 4],
         ...     'b': [2, 4, 6, 8],
         ...     'c': [10, 20, 15, 25]
         ... })
-        >>> df = nw.from_native(native_df)
         >>> stats = DatasetStatistics()
         >>> stats.does_data_have_multicollinearity(df, ['a', 'b', 'c'])
         True  # 'a' and 'b' are perfectly correlated
@@ -276,10 +261,8 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
-        >>> df = nw.from_native(native_df)
+        >>> df = nw.DataFrame({'values': [1, 2, 3, 4, 5]})
         >>> stats = DatasetStatistics()
         >>> stats.take_column_mean(df, 'values')
         3.0
@@ -303,10 +286,8 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
-        >>> df = nw.from_native(native_df)
+        >>> df = nw.DataFrame({'values': [1, 2, 3, 4, 5]})
         >>> stats = DatasetStatistics()
         >>> stats.take_column_median(df, 'values')
         3.0
@@ -330,10 +311,8 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({'values': [1, 2, 2, 3, 3, 3, 4]})
-        >>> df = nw.from_native(native_df)
+        >>> df = nw.DataFrame({'values': [1, 2, 2, 3, 3, 3, 4]})
         >>> stats = DatasetStatistics()
         >>> stats.take_column_mode(df, 'values')
         3
@@ -359,10 +338,8 @@ class DatasetStatistics:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({'values': [1, 2, 3, 4, 5]})
-        >>> df = nw.from_native(native_df)
+        >>> df = nw.DataFrame({'values': [1, 2, 3, 4, 5]})
         >>> stats = DatasetStatistics()
         >>> std = stats.take_column_std(df, 'values')
         >>> round(std, 2)

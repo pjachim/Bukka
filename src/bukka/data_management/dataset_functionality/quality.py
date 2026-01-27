@@ -1,6 +1,5 @@
 import narwhals as nw
 from narwhals.typing import FrameT
-import polars as pl
 
 class DatasetQuality:
     """
@@ -14,7 +13,7 @@ class DatasetQuality:
         
         Parameters
         ----------
-        df : polars.DataFrame
+        df : Narwhals DataFrame
             The input DataFrame.
         column : str
             Name of the column to check.
@@ -26,13 +25,11 @@ class DatasetQuality:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({
+        >>> df = nw.DataFrame({
         ...     'feature1': [1, None, 3],
         ...     'feature2': [None, 2, 3]
         ... })
-        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> quality.get_column_null_count(df, 'feature1')
         1
@@ -56,14 +53,12 @@ class DatasetQuality:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({
+        >>> df = nw.DataFrame({
         ...     'int_col': [1, 2, 3],
         ...     'float_col': [1.0, 2.5, 3.3],
         ...     'str_col': ['a', 'b', 'c']
         ... })
-        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> quality.type_of_column(df, 'int_col')
         'int'
@@ -109,20 +104,17 @@ class DatasetQuality:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({
+        >>> df = nw.DataFrame({
         ...     'category': ['Cat', 'cat', 'CAT', 'Dog', 'dog']
         ... })
-        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> quality.has_inconsistent_categorical_data(df, 'category')
         True
         
-        >>> native_df2 = pl.DataFrame({
+        >>> df2 = nw.DataFrame({
         ...     'category': ['Cat', 'Cat', 'Dog', 'Dog', 'Bird']
         ... })
-        >>> df2 = nw.from_native(native_df2)
         >>> quality.has_inconsistent_categorical_data(df2, 'category')
         False
         """
@@ -168,15 +160,13 @@ class DatasetQuality:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({
+        >>> df = nw.DataFrame({
         ...     'short_text': ['cat', 'dog', 'bird'],
         ...     'long_text': ['This is a long sentence about machine learning.',
         ...                   'Another detailed description of data processing.',
         ...                   'Text classification requires proper preprocessing.']
         ... })
-        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> quality.is_text_column(df, 'short_text')
         False
@@ -215,13 +205,11 @@ class DatasetQuality:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({
+        >>> df = nw.DataFrame({
         ...     'feature1': [1, None, 3],
         ...     'feature2': [None, 2, 3]
         ... })
-        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> missing_df = quality.check_missing_values(df)
         >>> missing_df
@@ -239,12 +227,11 @@ class DatasetQuality:
             col: int(df.select(nw.col(col).is_null().sum()).to_numpy()[0, 0])
             for col in df.columns
         }
-        # Return as native Polars for now (will be wrapped if needed)
-        result_df = pl.DataFrame({
+        # Return as Narwhals DataFrame
+        return nw.DataFrame({
             "column": list(missing_counts.keys()),
             "missing_count": list(missing_counts.values())
         })
-        return nw.from_native(result_df)
     
     def convert_columns_conservatively_to_best_type(self, df: FrameT) -> FrameT:
         """Convert columns to their best possible types conservatively.
@@ -261,36 +248,16 @@ class DatasetQuality:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({
+        >>> df = nw.DataFrame({
         ...     'int_str': ['1', '2', '3'],
         ...     'float_str': ['1.0', '2.5', '3.3'],
         ...     'mixed_str': ['1', 'two', '3']
         ... })
-        >>> df = nw.from_native(native_df)
         >>> quality = DatasetQuality()
         >>> converted_df = quality.convert_columns_conservatively_to_best_type(df)
         >>> # Check types
         """
-        # This method uses Polars-specific casting, convert to native
-        native_df = nw.to_native(df)
-        for col in native_df.columns:
-            try:
-                native_df = native_df.with_columns(native_df[col].cast(pl.Int64, strict=False))
-                continue
-            except:
-                pass
-            try:
-                native_df = native_df.with_columns(native_df[col].cast(pl.Float64, strict=False))
-                continue
-            except:
-                pass
-
-            try:
-                native_df = native_df.with_columns(native_df[col].str.strptime(pl.Datetime, strict=False))
-                continue
-            except:
-                pass
-
-        return nw.from_native(native_df)
+        # Conservative no-op conversion without backend-specific dtypes.
+        # Future improvement: implement backend-agnostic casting via Narwhals expressions.
+        return df

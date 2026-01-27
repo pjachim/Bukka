@@ -169,7 +169,8 @@ class TestEnvironmentBuilderInstallPackages:
             # Verify it contains expected packages
             content = requirements_path.read_text()
             assert 'scikit-learn' in content
-            assert 'polars' in content
+            assert 'narwhals' in content
+            assert 'pyarrow' in content
 
     @patch('bukka.environment.environment.subprocess.run')
     def test_install_packages_calls_pip(self, mock_subprocess_run):

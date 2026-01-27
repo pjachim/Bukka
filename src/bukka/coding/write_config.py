@@ -26,7 +26,7 @@ class ConfigWriter:
     output_path : str
         The file path where the configuration file will be written.
     backend_name : str
-        The name of the DataFrame backend to use (e.g., 'pandas', 'polars').
+        The name of the DataFrame backend to use with Narwhals (e.g., 'pyarrow', 'modin', 'cudf', 'dask').
     file_manager : FileManager
         Manager for project file paths and directory structure.
     enable_mlflow : bool, optional
@@ -37,8 +37,8 @@ class ConfigWriter:
 
     Examples
     --------
-    >>> writer = ConfigWriter(output_path="config.py", backend_name="pandas", file_manager=fm)
-    >>> writer.write_config()  # Writes the config file with pandas backend
+    >>> writer = ConfigWriter(output_path="config.py", backend_name="pyarrow", file_manager=fm)
+    >>> writer.write_config()  # Writes the config file with pyarrow backend
     """
     def __init__(
         self,
@@ -63,8 +63,8 @@ class ConfigWriter:
 
         Examples
         --------
-        >>> writer = ConfigWriter(output_path="config.py", backend_name="polars", file_manager=fm)
-        >>> writer.write_config()  # Writes the config file with polars backend
+        >>> writer = ConfigWriter(output_path="config.py", backend_name="pyarrow", file_manager=fm)
+        >>> writer.write_config()  # Writes the config file with pyarrow backend
         """
         config_code = CONFIG_TEMPLATE.format(
             backend_name=self.backend_name,

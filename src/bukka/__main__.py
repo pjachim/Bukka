@@ -161,7 +161,7 @@ Examples:
   python -m bukka run --config bukka_config.yaml
   
   # Specify backend and problem type
-  python -m bukka run -n my_proj -d data.csv -t label --backend pandas --problem-type regression
+    python -m bukka run -n my_proj -d data.csv -t label --backend pyarrow --problem-type regression
   
   # Create project structure only (no dataset yet)
   python -m bukka run --name my_project --skip-venv
@@ -242,7 +242,7 @@ For more information, visit: https://github.com/pjachim/Bukka
         type=str,
         choices=SUPPORTED_BACKENDS,
         default=None,
-        help=f'Dataframe backend (default: polars). Supported: {', '.join(SUPPORTED_BACKENDS)}'
+        help=f'Dataframe backend (default: pyarrow). Supported: {', '.join(SUPPORTED_BACKENDS)}'
     )
     data_group.add_argument(
         '--train-size',

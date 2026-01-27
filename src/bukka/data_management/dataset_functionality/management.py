@@ -35,14 +35,12 @@ class DatasetManagement:
         
         Examples
         --------
-        >>> import polars as pl
         >>> import narwhals as nw
-        >>> native_df = pl.DataFrame({
+        >>> df = nw.DataFrame({
         ...     'feature1': [1, 2, 3, 4, 5, 6, 7, 8],
         ...     'feature2': [5, 4, 3, 2, 1, 8, 7, 6],
         ...     'target': [0, 1, 0, 1, 0, 1, 0, 1]
         ... })
-        >>> df = nw.from_native(native_df)
         >>> manager = DatasetManagement()
         >>> train_df, test_df = manager.split_dataset(df, 'target', train_size=0.5, stratify=True)
         >>> # Check stratification: both sets should have equal proportions of each class

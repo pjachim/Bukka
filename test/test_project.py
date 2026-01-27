@@ -27,7 +27,7 @@ class TestProjectInitialization:
         assert proj.file_manager is None
         assert proj.environ_manager is None
         assert proj.skip_venv is False
-        assert proj.backend == "polars"
+        assert proj.backend == "pyarrow"
         assert proj.problem_type == "auto"
         assert proj.train_size == 0.8
         assert proj.stratify is True
@@ -61,15 +61,15 @@ class TestProjectInitialization:
         
         Examples
         --------
-        >>> proj = Project(name="proj", backend="pandas")
-        >>> assert proj.backend == "pandas"
+        >>> proj = Project(name="proj", backend="pyarrow")
+        >>> assert proj.backend == "pyarrow"
         """
         proj = Project(
             name="test_project",
-            backend="pandas"
+            backend="pyarrow"
         )
         
-        assert proj.backend == "pandas"
+        assert proj.backend == "pyarrow"
 
     def test_project_initialization_with_skip_venv(self):
         """Test Project initialization with skip_venv enabled.
