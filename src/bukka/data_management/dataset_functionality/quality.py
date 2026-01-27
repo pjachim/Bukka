@@ -146,6 +146,60 @@ class DatasetQuality:
         
         return False
 
+    def is_text_column(self, df: FrameT, column: str, min_avg_length: int = 50) -> bool:
+        """Check if a string column contains text data (e.g., for NLP tasks).
+        
+        A column is considered a text column if it's a string type and the average
+        non-null string length exceeds the minimum threshold.
+        
+        Parameters
+        ----------
+        df : Narwhals DataFrame
+            The input DataFrame.
+        column : str
+            Name of the column to check.
+        min_avg_length : int, optional
+            Minimum average string length to be considered text. Defaults to 50.
+        
+        Returns
+        -------
+        bool
+            True if the column appears to contain text data, False otherwise.
+        
+        Examples
+        --------
+        >>> import polars as pl
+        >>> import narwhals as nw
+        >>> native_df = pl.DataFrame({
+        ...     'short_text': ['cat', 'dog', 'bird'],
+        ...     'long_text': ['This is a long sentence about machine learning.',
+        ...                   'Another detailed description of data processing.',
+        ...                   'Text classification requires proper preprocessing.']
+        ... })
+        >>> df = nw.from_native(native_df)
+        >>> quality = DatasetQuality()
+        >>> quality.is_text_column(df, 'short_text')
+        False
+        >>> quality.is_text_column(df, 'long_text')
+        True
+        """
+        # Check if column is string type
+        dtype_str = str(df.schema[column]).lower()
+        if not ('str' in dtype_str or 'utf8' in dtype_str or 'string' in dtype_str):
+            return False
+        
+        # Calculate average string length of non-null values
+        native_df = nw.to_native(df)
+        col_data = native_df.select(column).to_series()
+        
+        # Filter out null values and calculate average length
+        non_null_values = [str(v) for v in col_data.to_list() if v is not None]
+        if not non_null_values:
+            return False
+        
+        avg_length = sum(len(v) for v in non_null_values) / len(non_null_values)
+        return avg_length >= min_avg_length
+
     def check_missing_values(self, df: FrameT) -> FrameT:
         """Check for missing values in the DataFrame.
         

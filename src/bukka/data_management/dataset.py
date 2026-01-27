@@ -392,6 +392,30 @@ class Dataset:
         if columns is None:
             columns = self.feature_columns
         return self.statistics.does_data_have_multicollinearity(self.train_df, columns, threshold)
+    
+    def is_text_column(self, column: str, min_avg_length: int = 50) -> bool:
+        """Check if a column contains text data suitable for NLP tasks.
+        
+        Parameters
+        ----------
+        column : str
+            Name of the column to check.
+        min_avg_length : int, optional
+            Minimum average string length to be considered text. Defaults to 50.
+        
+        Returns
+        -------
+        bool
+            True if the column appears to contain text data, False otherwise.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(target_column='label', file_manager=fm)
+        >>> is_text = dataset.is_text_column('description')
+        >>> print(is_text)
+        True
+        """
+        return self.quality.is_text_column(self.train_df, column, min_avg_length)
         
     def __repr__(self):
         return f"Dataset(target_column={self.target_column}, feature_columns={self.feature_columns})"

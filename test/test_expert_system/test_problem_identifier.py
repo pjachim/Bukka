@@ -69,11 +69,16 @@ class DummyDataset:
     def has_inconsistent_categorical_data(self, column):
         return self.backend.has_inconsistent_categorical_data(column)
     
+    def is_text_column(self, column, min_avg_length=50):
+        # Assume no text columns for tests unless backend specifies
+        return getattr(self.backend, 'is_text_column', lambda x: False)(column)
+    
     def get_unq_count(self, column):
         return self.backend.get_unq_count(column)
     
     def has_multicollinearity(self, columns=None, threshold=0.8):
         return self.backend.has_multicollinearity()
+
 
 
 def test_multivariate_detection():

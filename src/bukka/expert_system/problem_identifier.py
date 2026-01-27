@@ -102,7 +102,20 @@ class ProblemIdentifier:
 
         # String/categorical-type specific checks
         if column_type == "string":
-            if self.dataset.has_inconsistent_categorical_data(feature):
+            # Check if this is a text column (for NLP)
+            if self.dataset.is_text_column(feature):
+                problem = Problem(
+                    problem_name="Text Data",
+                    description=f"The feature '{feature}' contains text data that may benefit from NLP preprocessing.",
+                    features=[feature],
+                    solutions=[],
+                    problem_type="transformer",
+                )
+                problem.add_solution(sol.text_solutions.tfidf_solution, column_type)
+                problem.add_solution(sol.text_solutions.countvectorizer_solution, column_type)
+                problem.add_solution(sol.text_solutions.hashingvectorizer_solution, column_type)
+                self.problems_to_solve.add_problem(problem)
+            elif self.dataset.has_inconsistent_categorical_data(feature):
                 problem = Problem(
                     problem_name="Inconsistent Categorical Data",
                     description=f"The feature '{feature}' contains inconsistent categorical data.",

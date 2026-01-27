@@ -2,15 +2,37 @@
 
 This plan addresses unused code, over-engineered abstractions, and dead features to reduce maintenance burden while preserving extensibility.
 
-## Steps
+## ✅ Completed Steps
 
-1. **Delete unused wrapper abstraction** in `src/bukka/data_management/wrapper/` — the entire directory except `polars.py` appears vestigial; also remove duplicate `src/bukka/utils/files/` if it duplicates `FileManager` in logistics.
+1. ~~**Delete unused wrapper abstraction** in `src/bukka/data_management/wrapper/`~~ ✅ **COMPLETED**
+   - The wrapper directory was empty and vestigial (polars.py never existed; the codebase has already migrated to Narwhals)
+   - Deleted `src/bukka/data_management/wrapper/` entirely
+   - Note: `src/bukka/utils/files/` is NOT a duplicate - it contains `FileManager` which is actively used throughout the codebase
 
-3. **Implement stratification** in `src/bukka/data_management/wrapper/polars.py` — `split_dataset` accepts `strata`/`stratify` parameters but ignores them; implement stratified sampling.
+3. ~~**Implement stratification** in `src/bukka/data_management/dataset_functionality/management.py`~~ ✅ **COMPLETED**
+   - Implemented full stratified sampling in `split_dataset` method
+   - When `stratify=True` (default), splits each group formed by `strata` columns (or `target_column` if strata is None) proportionally
+   - When `stratify=False`, performs simple random split
+   - Added intelligent fallback: if >50% of values are unique (e.g., continuous target), automatically falls back to non-stratified split
+   - Handles edge cases: single-row groups are randomly assigned; ensures at least 1 sample per split when possible
+   - Updated docstring with comprehensive parameter documentation and examples
 
-4. **Prune unused expert_system solutions** — multiple solution classes in `implemented_solutions/` (e.g., `TextPreprocessing`, `TfidfVectorizerSolution`, many regression/classification alternatives) are never wired to `ProblemIdentifier`; connect them.
+4. ~~**Prune unused expert_system solutions**~~ ✅ **COMPLETED**
+   - Connected text solutions (TfidfVectorizer, CountVectorizer, HashingVectorizer) to ProblemIdentifier
+   - Added `is_text_column()` method to `DatasetQuality` and `Dataset` to detect text data (avg string length ≥ 50 chars)
+   - Updated `_identify_univariate_problems()` to detect text columns and add text preprocessing solutions
+   - Text solutions are now automatically suggested for columns with long text content
 
-6. **Fix or remove dead preprocessing references** in `src/bukka/expert_system/implemented_solutions/` — solutions reference `bukka.preprocessing.categorical` which doesn't exist; create the module.
+6. ~~**Fix dead preprocessing references**~~ ✅ **COMPLETED**
+   - Created `src/bukka/preprocessing/` module with `categorical.py`
+   - Implemented `standardize_categories` transformer: normalizes case, strips whitespace, applies custom mappings
+   - Implemented `encode_categories` transformer: supports ordinal and label encoding
+   - Both transformers follow scikit-learn's BaseEstimator/TransformerMixin pattern
+   - Added comprehensive docstrings with numpy-style documentation and usage examples
+
+## Test Results
+
+All 238 tests pass ✅
 
 ## Further Considerations
 
