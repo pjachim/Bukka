@@ -120,9 +120,8 @@ class DatasetQuality:
         """
         # Get unique values - select using Narwhals first, then convert to native
         selected_df = df.select(nw.col(column))
-        unique_values = list(selected_df.unique()).to_series().tolist()
-        
-        unique_values = unique_values[column].unique().tolist()
+        df.select(nw.col(column).unique())
+        unique_values = [x[0] for x in df.select(nw.col(column).unique().drop_nulls()).iter_rows()]
         
         # Check for case inconsistencies
         normalized = [str(v).strip().lower() if v is not None else None for v in unique_values]
