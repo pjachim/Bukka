@@ -118,9 +118,11 @@ class DatasetQuality:
         >>> quality.has_inconsistent_categorical_data(df2, 'category')
         False
         """
-        # Get unique values - convert to native for to_list()
-        native_df = nw.to_native(df)
-        unique_values = native_df.select(native_df[column].unique()).to_series().to_list()
+        # Get unique values - select using Narwhals first, then convert to native
+        selected_df = df.select(nw.col(column))
+        unique_values = list(selected_df.unique()).to_series().tolist()
+        
+        unique_values = unique_values[column].unique().tolist()
         
         # Check for case inconsistencies
         normalized = [str(v).strip().lower() if v is not None else None for v in unique_values]
@@ -178,16 +180,12 @@ class DatasetQuality:
         if not ('str' in dtype_str or 'utf8' in dtype_str or 'string' in dtype_str):
             return False
         
-        # Calculate average string length of non-null values
-        native_df = nw.to_native(df)
-        col_data = native_df.select(column).to_series()
-        
-        # Filter out null values and calculate average length
-        non_null_values = [str(v) for v in col_data.to_list() if v is not None]
+        # Count non-null values
+        non_null_values = df.select((~nw.col(column).is_null()).sum()).item()
         if not non_null_values:
             return False
         
-        avg_length = sum(len(v) for v in non_null_values) / len(non_null_values)
+        avg_length = df.select(nw.col(column).str.len_chars().mean()).item()
         return avg_length >= min_avg_length
 
     def check_missing_values(self, df: FrameT) -> FrameT:
