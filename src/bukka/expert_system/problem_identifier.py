@@ -28,7 +28,8 @@ class ProblemIdentifier:
 
     def identify_problems(self) -> None:
         """Identify problems in the dataset and populate `problems_to_solve`."""
-        self.multivariate_problems()
+        #TODO: Enable multivariate problem detection
+        #self.multivariate_problems()
         self.univariate_problems()
         self.identify_ml_problem()
 
