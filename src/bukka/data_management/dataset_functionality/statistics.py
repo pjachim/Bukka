@@ -51,16 +51,38 @@ class DatasetStatistics:
             # Need at least 2 numeric columns for correlation
             return []
         
-        # Convert to native for correlation computation (not all backends support corr in Narwhals)
-        native_df = nw.to_native(df)
-        correlation_matrix = native_df[numeric_columns].corr()
+        # Compute correlations manually using Narwhals operations
+        # Correlation(X, Y) = Cov(X, Y) / (Std(X) * Std(Y))
         correlated_pairs = []
+        
         for i in range(len(numeric_columns)):
             for j in range(i + 1, len(numeric_columns)):
-                corr_value = correlation_matrix[i, j]
+                col_i = numeric_columns[i]
+                col_j = numeric_columns[j]
+                
+                # Get means
+                mean_i = df.select(nw.col(col_i).mean()).to_numpy()[0, 0]
+                mean_j = df.select(nw.col(col_j).mean()).to_numpy()[0, 0]
+                
+                # Get standard deviations
+                std_i = df.select(nw.col(col_i).std()).to_numpy()[0, 0]
+                std_j = df.select(nw.col(col_j).std()).to_numpy()[0, 0]
+                
+                # Skip if either has zero standard deviation
+                if std_i == 0 or std_j == 0:
+                    continue
+                
+                # Compute covariance: E[(X - mean_X) * (Y - mean_Y)]
+                cov_value = df.select(
+                    ((nw.col(col_i) - mean_i) * (nw.col(col_j) - mean_j)).mean()
+                ).to_numpy()[0, 0]
+                
+                # Compute correlation
+                corr_value = cov_value / (std_i * std_j)
+                
                 if abs(corr_value) > threshold:
-                    correlated_pairs.append((numeric_columns[i], numeric_columns[j], corr_value))
-
+                    correlated_pairs.append((col_i, col_j, corr_value))
+        
         return correlated_pairs
     
     def varied_scale(self, df: FrameT, column_name: str) -> float:
@@ -317,9 +339,17 @@ class DatasetStatistics:
         >>> stats.take_column_mode(df, 'values')
         3
         """
-        # Mode may not be available in all backends via Narwhals, use native
-        native_df = nw.to_native(df)
-        return native_df.select(native_df[column_name].mode()).to_numpy()[0, 0]
+        # Compute mode using Narwhals: group by value and count, then find max
+        # This approach works across all backends
+        mode_df = df.select(nw.col(column_name)).group_by(column_name).agg(
+            nw.col(column_name).count().alias('count')
+        ).sort('count', descending=True).head(1)
+        
+        # Extract the mode value
+        result = mode_df.to_numpy()
+        if len(result) > 0:
+            return result[0, 0]
+        return None
     
     def take_column_std(self, df: FrameT, column_name: str) -> float:
         """Calculate the standard deviation of a column.
