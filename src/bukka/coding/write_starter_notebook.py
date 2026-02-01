@@ -21,6 +21,8 @@ class StarterNotebookWriter:
     problem_type : str, optional
         The type of ML problem ('regression', 'classification', 'auto', etc.).
         Defaults to 'auto'.
+    enable_mlflow : bool, optional
+        Whether to include MLflow experiment tracking examples. Defaults to False.
 
     Examples
     --------
@@ -32,15 +34,24 @@ class StarterNotebookWriter:
     ...     output_path="starter_notebook.ipynb",
     ...     venv_path=".venv",
     ...     target_column="target",
-    ...     problem_type="regression"
+    ...     problem_type="regression",
+    ...     enable_mlflow=True
     ... )
     >>> writer.write_notebook()  # Writes notebook configured for the venv
     """
-    def __init__(self, output_path: str, venv_path: str | Path | None = None, target_column: str | None = None, problem_type: str = "auto") -> None:
+    def __init__(
+        self,
+        output_path: str,
+        venv_path: str | Path | None = None,
+        target_column: str | None = None,
+        problem_type: str = "auto",
+        enable_mlflow: bool = False
+    ) -> None:
         self.output_path = output_path
         self.venv_path = venv_path
         self.target_column = target_column
         self.problem_type = problem_type
+        self.enable_mlflow = enable_mlflow
 
     def write_notebook(self) -> None:
         """
@@ -56,6 +67,9 @@ class StarterNotebookWriter:
                 self._add_supervised_cells(notebook_writer)
             else:
                 self._add_unsupervised_cells(notebook_writer)
+            
+            if self.enable_mlflow:
+                self._add_mlflow_cells(notebook_writer)
 
     def _add_supervised_cells(self, notebook_writer) -> None:
         """Add cells for supervised learning tasks."""
@@ -207,4 +221,65 @@ class StarterNotebookWriter:
                 "# plt.show()"
             ),
             cell_type="code"
+        )
+
+    def _add_mlflow_cells(self, notebook_writer) -> None:
+        """Add MLflow experiment tracking cells."""
+        notebook_writer.add_cell(
+            cell_content="## MLflow Experiment Tracking\n\nThis project is configured with MLflow for experiment tracking. "
+                        "Track your model's hyperparameters, metrics, and artifacts using the `setup_mlflow()` function.",
+            cell_type="markdown"
+        )
+
+        notebook_writer.add_cell(
+            cell_content=(
+                "# Initialize MLflow tracking with your project's configuration\n"
+                "from scripts.mlflow_setup import setup_mlflow\n\n"
+                "# Setup MLflow (reads configuration from config.py)\n"
+                "mlflow_client = setup_mlflow()\n"
+                "print(\"MLflow is now initialized!\")"
+            ),
+            cell_type="code"
+        )
+
+        notebook_writer.add_cell(
+            cell_content="### Log Your Experiment\n\nWrap your model training code in `mlflow.start_run()` to automatically track parameters and metrics.",
+            cell_type="markdown"
+        )
+
+        notebook_writer.add_cell(
+            cell_content=(
+                "# Example: Training with MLflow tracking\n"
+                "with mlflow.start_run(run_name=\"my_first_experiment\"):\n"
+                "    # Log hyperparameters\n"
+                "    mlflow.log_param(\"model_type\", \"random_forest\")\n"
+                "    mlflow.log_param(\"n_estimators\", 100)\n"
+                "    mlflow.log_param(\"max_depth\", 10)\n\n"
+                "    # Train your model\n"
+                "    # model = pipeline.fit(X_train, y_train)\n"
+                "    # predictions = pipeline.predict(X_test)\n\n"
+                "    # Log metrics\n"
+                "    # accuracy = accuracy_score(y_test, predictions)\n"
+                "    # mlflow.log_metric(\"accuracy\", accuracy)\n"
+                "    # mlflow.log_metric(\"f1_score\", f1_score(y_test, predictions))\n\n"
+                "    # Add tags for organization\n"
+                "    mlflow.set_tag(\"dataset\", \"your_dataset\")\n"
+                "    mlflow.set_tag(\"version\", \"v1\")\n\n"
+                "    print(f\"Run ID: {mlflow.active_run().info.run_id}\")"
+            ),
+            cell_type="code"
+        )
+
+        notebook_writer.add_cell(
+            cell_content="### View Your Experiments\n\nTo view all your tracked experiments in the MLflow UI, run the following command in your terminal:\n\n"
+                        "```bash\n"
+                        "mlflow ui\n"
+                        "```\n\n"
+                        "Then open [http://localhost:5000](http://localhost:5000) in your browser to see:\n"
+                        "- All experiment runs\n"
+                        "- Logged parameters and metrics\n"
+                        "- Performance comparisons across runs\n"
+                        "- Experiment artifacts\n\n"
+                        "For more details, see the `mlflow_notebook.ipynb` file for a comprehensive tutorial.",
+            cell_type="markdown"
         )
