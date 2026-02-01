@@ -213,7 +213,7 @@ class TestConfigManager:
                 'skip_venv': True
             },
             'data': {
-                'backend': 'pandas',
+                'backend': 'pyarrow',
                 'train_size': 0.7,
                 'stratify': False,
                 'strata': None
@@ -229,7 +229,7 @@ class TestConfigManager:
         loaded_config = ConfigManager.load_config(config_path)
         
         assert loaded_config['project']['name'] == 'test_project'
-        assert loaded_config['data']['backend'] == 'pandas'
+        assert loaded_config['data']['backend'] == 'pyarrow'
         assert loaded_config['data']['train_size'] == 0.7
         assert loaded_config['problem']['type'] == 'regression'
 
@@ -274,7 +274,7 @@ class TestConfigManager:
         config_path = tmp_path / "invalid_problem.yaml"
         config_data = {
             'project': {'name': 'test'},
-            'data': {'backend': 'polars'},
+            'data': {'backend': 'pyarrow'},
             'problem': {'type': 'invalid_type'}
         }
         
@@ -289,7 +289,7 @@ class TestConfigManager:
         config_path = tmp_path / "invalid_train_size.yaml"
         config_data = {
             'project': {'name': 'test'},
-            'data': {'backend': 'polars', 'train_size': 1.5},
+            'data': {'backend': 'pyarrow', 'train_size': 1.5},
             'problem': {'type': 'auto'}
         }
         
@@ -439,13 +439,13 @@ class TestCLIIntegrationWithNewFeatures:
             
             def patched_init(self, *args, **kwargs):
                 # Track that backend was passed
-                self._test_backend = kwargs.get('backend', kwargs.get('dataframe_backend', 'polars'))
+                self._test_backend = kwargs.get('backend', kwargs.get('dataframe_backend', 'pyarrow'))
                 raise RuntimeError(f"Backend received: {{self._test_backend}}")
             
             ds_module.Dataset.__init__ = patched_init
             
             sys.argv = ['bukka', 'run', '--name', r'{proj}', '--dataset', r'{csv}', 
-                       '--target', 'target', '--backend', 'pandas', '--skip-venv']
+                       '--target', 'target', '--backend', 'pyarrow', '--skip-venv']
             
             try:
                 from bukka.__main__ import main
@@ -461,7 +461,7 @@ class TestCLIIntegrationWithNewFeatures:
                               capture_output=True, text=True)
 
         # The test passes if we successfully passed the backend parameter
-        assert result.returncode == 0 or "Backend received: pandas" in result.stderr
+        assert result.returncode == 0 or "Backend received: pyarrow" in result.stderr
     
     def test_cli_with_problem_type_option(self, tmp_path):
         """Test CLI run with --problem-type option."""
@@ -516,7 +516,7 @@ class TestCLIIntegrationWithNewFeatures:
                 'skip_venv': True
             },
             'data': {
-                'backend': 'pandas',
+                'backend': 'pyarrow',
                 'train_size': 0.7
             },
             'problem': {
@@ -536,7 +536,7 @@ class TestCLIIntegrationWithNewFeatures:
             original_init = proj_module.Project.__init__
             
             def patched_init(self, *args, **kwargs):
-                self._test_backend = kwargs.get('backend', 'polars')
+                self._test_backend = kwargs.get('backend', 'pyarrow')
                 self._test_problem_type = kwargs.get('problem_type', 'auto')
                 self._test_train_size = kwargs.get('train_size', 0.8)
                 raise RuntimeError(
@@ -562,7 +562,7 @@ class TestCLIIntegrationWithNewFeatures:
         result = subprocess.run([sys.executable, "-c", code],
                               capture_output=True, text=True)
 
-        assert result.returncode == 0 or "backend=pandas" in result.stderr
+        assert result.returncode == 0 or "backend=pyarrow" in result.stderr
         assert result.returncode == 0 or "problem_type=binary_classification" in result.stderr
         assert result.returncode == 0 or "train_size=0.7" in result.stderr
 

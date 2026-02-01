@@ -11,6 +11,7 @@ tfidf_solution = solution.Solution(
     },
     function_import="from sklearn.feature_extraction.text import TfidfVectorizer",
     function_name="TfidfVectorizer",
+    compatible_types=["string"],
 )
 
 countvectorizer_solution = solution.Solution(
@@ -23,6 +24,7 @@ countvectorizer_solution = solution.Solution(
     },
     function_import="from sklearn.feature_extraction.text import CountVectorizer",
     function_name="CountVectorizer",
+    compatible_types=["string"],
 )
 
 hashingvectorizer_solution = solution.Solution(
@@ -35,4 +37,5 @@ hashingvectorizer_solution = solution.Solution(
     },
     function_import="from sklearn.feature_extraction.text import HashingVectorizer",
     function_name="HashingVectorizer",
+    compatible_types=["string"],
 )

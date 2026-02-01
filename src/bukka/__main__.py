@@ -9,6 +9,7 @@ from pathlib import Path
 from bukka.project import Project
 from bukka.utils import bukka_logger
 from bukka.cli_config import (
+    BukkaConfig,
     ConfigManager,
     ConfigValidator,
     SUPPORTED_BACKENDS,
@@ -16,6 +17,42 @@ from bukka.cli_config import (
 )
 
 logger = bukka_logger.BukkaLogger(__name__)
+
+
+def print_project_success(config: BukkaConfig) -> None:
+    """Print formatted success message after project creation.
+    
+    Args:
+        config: The project configuration used.
+    
+    Examples:
+        >>> config = BukkaConfig(name="test", dataset="data.csv")
+        >>> print_project_success(config)  # doctest: +SKIP
+    """
+    print(f"\n{'='*60}")
+    print(f"[OK] Project '{config.name}' created successfully!")
+    print(f"{'='*60}")
+    
+    if config.dataset:
+        print(f"\nDataset: {config.dataset}")
+        print(f"Target: {config.target or 'auto-detect'}")
+        print(f"Backend: {config.backend}")
+        print(f"Problem: {config.problem_type}")
+    
+    print(f"\nProject location: {Path(config.name).absolute()}")
+    print(f"\nNext steps:")
+    print(f"  1. cd {config.name}")
+    
+    if not config.skip_venv:
+        print(f"  2. Activate the virtual environment")
+        print(f"     Windows: .venv\\Scripts\\activate")
+        print(f"     Linux/Mac: source .venv/bin/activate")
+    
+    if config.dataset:
+        print(f"  3. Review the generated pipeline in pipelines/generated/")
+        print(f"  4. Open notebooks/starter_notebook.ipynb to begin experimentation")
+    else:
+        print(f"  2. Add your dataset and run: python -m bukka run --name {config.name} --dataset <path>")
 
 
 def create_config_template(args: argparse.Namespace) -> None:
@@ -37,149 +74,64 @@ def create_config_template(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
-def validate_cli_args(args: argparse.Namespace) -> None:
-    """Validate command-line arguments.
+def validate_config(config: BukkaConfig) -> None:
+    """Validate configuration and exit if errors found.
     
     Args:
-        args: Parsed command-line arguments.
+        config: Configuration to validate.
         
     Raises:
-        SystemExit: If validation fails.
+        SystemExit: If validation errors are found.
+    
+    Examples:
+        >>> config = BukkaConfig(name="test")
+        >>> validate_config(config)  # Should not raise if valid
     """
-    errors = []
+    errors = config.validate()
     
-    # Validate project name
-    try:
-        if args.name:
-            ConfigValidator.validate_project_name(args.name)
-    except ValueError as e:
-        errors.append(str(e))
-    
-    # Validate dataset path
-    try:
-        if args.dataset:
-            ConfigValidator.validate_dataset_path(args.dataset)
-    except (FileNotFoundError, ValueError) as e:
-        errors.append(str(e))
-    
-    # Validate backend
-    try:
-        if args.backend:
-            ConfigValidator.validate_backend(args.backend)
-    except ValueError as e:
-        errors.append(str(e))
-    
-    # Validate problem type
-    try:
-        if args.problem_type:
-            ConfigValidator.validate_problem_type(args.problem_type)
-    except ValueError as e:
-        errors.append(str(e))
-    
-    # Validate train size
-    try:
-        if hasattr(args, 'train_size') and args.train_size is not None:
-            ConfigValidator.validate_train_size(args.train_size)
-    except ValueError as e:
-        errors.append(str(e))
-    
-        if errors:
-            logger.error("Validation errors found:")
-            for error in errors:
-                logger.error(f"  - {error}")
-                print(f"[ERROR] {error}", file=sys.stderr)
-            sys.exit(1)
+    if errors:
+        logger.error("Validation errors found:")
+        for error in errors:
+            logger.error(f"  - {error}")
+            print(f"[ERROR] {error}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_project(args: argparse.Namespace) -> None:
     """Run the main project creation workflow.
     
     Args:
         args: Parsed command-line arguments.
     """
-    # Load from config file if provided
-    if args.config:
-        try:
+    # Load and merge configuration
+    try:
+        if args.config:
             logger.info(f"Loading configuration from: {args.config}")
-            config = ConfigManager.load_config(args.config)
-            
-            # Override with CLI arguments if provided
-            name = args.name or config['project']['name']
-            dataset = args.dataset or config['project']['dataset']
-            target = args.target if args.target is not None else config['project']['target']
-            skip_venv = args.skip_venv or config['project']['skip_venv']
-            backend = args.backend or config['data']['backend']
-            problem_type = args.problem_type or config['problem']['type']
-            train_size = args.train_size if hasattr(args, 'train_size') and args.train_size is not None else config['data']['train_size']
-            stratify = config['data']['stratify']
-            strata = config['data']['strata']
-            
-        except (FileNotFoundError, ValueError) as e:
-            logger.error(f"Configuration error: {e}")
-            print(f"[ERROR] Configuration error: {e}", file=sys.stderr)
-            sys.exit(1)
-    else:
-        # Use CLI arguments directly
-        name = args.name
-        dataset = args.dataset
-        target = args.target
-        skip_venv = args.skip_venv
-        backend = args.backend or "polars"
-        problem_type = args.problem_type or "auto"
-        train_size = args.train_size if hasattr(args, 'train_size') and args.train_size is not None else 0.8
-        stratify = args.stratify if hasattr(args, 'stratify') else True
-        strata = args.strata if hasattr(args, 'strata') else None
+        
+        config_dict = ConfigManager.merge_args_and_config(args, args.config if args.config else None)
+        config = BukkaConfig.from_args_and_config(args, config_dict)
+        
+    except (FileNotFoundError, ValueError) as e:
+        logger.error(f"Configuration error: {e}")
+        print(f"[ERROR] Configuration error: {e}", file=sys.stderr)
+        sys.exit(1)
     
-    # Validate all arguments
-    args_to_validate = argparse.Namespace(
-        name=name,
-        dataset=dataset,
-        backend=backend,
-        problem_type=problem_type,
-        train_size=train_size
-    )
-    validate_cli_args(args_to_validate)
+    # Validate configuration
+    validate_config(config)
+    
+    # Log project info
+    logger.info("Creating Bukka project!", format_level="h1")
+    logger.info(f"Project: {config.name}")
+    logger.info(f"Dataset: {config.dataset or 'None (will be added later)'}")
+    logger.info(f"Target: {config.target or 'None (clustering or to be determined)'}")
+    logger.info(f"Backend: {config.backend}")
+    logger.info(f"Problem Type: {config.problem_type}")
     
     # Create and run project
-    logger.info("Creating Bukka project!", format_level="h1")
-    logger.info(f"Project: {name}")
-    logger.info(f"Dataset: {dataset or 'None (will be added later)'}")
-    logger.info(f"Target: {target or 'None (clustering or to be determined)'}")
-    logger.info(f"Backend: {backend}")
-    logger.info(f"Problem Type: {problem_type}")
-    
     try:
-        proj = Project(
-            name=name,
-            dataset_path=dataset,
-            target_column=target,
-            skip_venv=skip_venv,
-            backend=backend,
-            problem_type=problem_type,
-            train_size=train_size,
-            stratify=stratify,
-            strata=strata
-        )
+        proj = Project(**config.to_project_kwargs())
         proj.run()
-        
-        print(f"\n{'='*60}")
-        print(f"[OK] Project '{name}' created successfully!")
-        print(f"{'='*60}")
-        if dataset:
-            print(f"\nDataset: {dataset}")
-            print(f"Target: {target or 'auto-detect'}")
-            print(f"Backend: {backend}")
-            print(f"Problem: {problem_type}")
-        print(f"\nProject location: {Path(name).absolute()}")
-        print(f"\nNext steps:")
-        print(f"  1. cd {name}")
-        if not skip_venv:
-            print(f"  2. Activate the virtual environment")
-            print(f"     Windows: .venv\\Scripts\\activate")
-            print(f"     Linux/Mac: source .venv/bin/activate")
-        if dataset:
-            print(f"  3. Review the generated pipeline in pipelines/generated/")
-            print(f"  4. Open notebooks/starter_notebook.ipynb to begin experimentation")
-        else:
-            print(f"  2. Add your dataset and run: python -m bukka run --name {name} --dataset <path>")
+        print_project_success(config)
         
     except Exception as e:
         logger.error(f"Failed to create project: {e}")
@@ -187,6 +139,7 @@ def run_project(args: argparse.Namespace) -> None:
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
 
 
 def main() -> None:
@@ -208,7 +161,7 @@ Examples:
   python -m bukka run --config bukka_config.yaml
   
   # Specify backend and problem type
-  python -m bukka run -n my_proj -d data.csv -t label --backend pandas --problem-type regression
+    python -m bukka run -n my_proj -d data.csv -t label --backend polars --problem-type regression
   
   # Create project structure only (no dataset yet)
   python -m bukka run --name my_project --skip-venv
@@ -269,6 +222,17 @@ For more information, visit: https://github.com/pjachim/Bukka
         '--skip-venv', '-sv',
         action='store_true',
         help='Skip virtual environment creation'
+    )
+    project_group.add_argument(
+        '--mlflow',
+        dest='enable_mlflow',
+        action='store_true',
+        help='Enable MLflow experiment tracking'
+    )
+    project_group.add_argument(
+        '--mlflow-tracking-uri',
+        type=str,
+        help='MLflow tracking URI (default: mlruns/ in project directory)'
     )
     
     # Data processing settings

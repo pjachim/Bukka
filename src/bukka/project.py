@@ -8,7 +8,9 @@ from bukka.data_management.dataset import Dataset
 from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
+from bukka.coding.write_mlflow_notebook import MLflowNotebookWriter
 from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
+from bukka.coding.write_config import ConfigWriter
 from bukka.utils.bukka_logger import BukkaLogger
 from bukka.expert_system.pipeline_builder import PipelineBuilder
 
@@ -30,8 +32,12 @@ class Project:
         The name of the target column in the dataset (optional).
     skip_venv : bool, optional
         Whether to skip virtual environment creation. Defaults to False.
+    enable_mlflow : bool, optional
+        Whether to enable MLflow experiment tracking. Defaults to False.
+    mlflow_tracking_uri : str | None, optional
+        MLflow tracking URI (optional). Defaults to file-based tracking in mlruns/.
     backend : str, optional
-        Dataframe backend to use (e.g., 'polars', 'pandas'). Defaults to 'polars'.
+        Dataframe backend to use via Narwhals (e.g., 'polars', 'pyarrow', 'modin', 'cudf', 'dask'). Defaults to 'polars'.
     problem_type : str, optional
         ML problem type specification. Defaults to 'auto'.
     train_size : float, optional
@@ -47,8 +53,17 @@ class Project:
     ...     name="my_project",
     ...     dataset_path="data.csv",
     ...     target_column="target",
-    ...     backend="polars",
+    ...     backend="pyarrow",
     ...     problem_type="binary_classification"
+    ... )
+    >>> proj.run()
+    
+    >>> # With MLflow enabled
+    >>> proj = Project(
+    ...     name="tracked_project",
+    ...     dataset_path="data.csv",
+    ...     target_column="target",
+    ...     enable_mlflow=True
     ... )
     >>> proj.run()
     """
@@ -58,6 +73,8 @@ class Project:
             dataset_path: str | None = None,
             target_column: str | None = None,
             skip_venv: bool = False,
+            enable_mlflow: bool = False,
+            mlflow_tracking_uri: str | None = None,
             backend: str = "polars",
             problem_type: str = "auto",
             train_size: float = 0.8,
@@ -71,6 +88,8 @@ class Project:
             dataset_path: The path to the original dataset file (optional).
             target_column: The name of the target column (optional).
             skip_venv: Whether to skip virtual environment creation.
+            enable_mlflow: Whether to enable MLflow experiment tracking.
+            mlflow_tracking_uri: MLflow tracking URI (optional).
             backend: Dataframe backend to use (default: 'polars').
             problem_type: ML problem type (default: 'auto').
             train_size: Train/test split ratio (default: 0.8).
@@ -82,6 +101,7 @@ class Project:
         logger.debug(f"Target column: {target_column}")
         logger.debug(f"Backend: {backend}")
         logger.debug(f"Problem type: {problem_type}")
+        logger.debug(f"MLflow enabled: {enable_mlflow}")
         
         self.name: str = name
         self.dataset_path: str | None = dataset_path
@@ -89,6 +109,8 @@ class Project:
         self.target_column: str | None = target_column
         self.environ_manager: EnvironmentBuilder | None = None
         self.skip_venv: bool = skip_venv
+        self.enable_mlflow: bool = enable_mlflow
+        self.mlflow_tracking_uri: str | None = mlflow_tracking_uri
         self.backend: str = backend
         self.problem_type: str = problem_type
         self.train_size: float = train_size
@@ -122,6 +144,13 @@ class Project:
                 stratify=self.stratify
             )
             self._write_data_reader_class()
+            self._write_config()
+            
+            if self.enable_mlflow:
+                logger.info("MLflow enabled, generating MLflow setup")
+                self._write_mlflow_setup()
+                self._write_mlflow_notebook()
+            
             self._write_starter_notebook()
         else:
             logger.debug("No dataset path provided, skipping pipeline generation")
@@ -192,9 +221,64 @@ class Project:
         the logic for loading the dataset, using the project's  `FileManager`.
         The generated class is saved to the project's data readers folder.  
         """
-        writer = DataReaderWriter(self.file_manager)
+        writer = DataReaderWriter(self.file_manager, target_column=self.target_column)
         writer.write_code()
         logger.info("Data reader class generation complete", format_level='h4')
+
+    def _write_config(self) -> None:
+        """Generate and write a configuration file for the project.
+
+        This method creates a configuration file (e.g., `config.py`) that
+        contains settings for the project, such as the DataFrame backend to use
+        and optional MLflow configuration.
+        """
+        writer = ConfigWriter(
+            output_path=self.file_manager.config_path,
+            backend_name=self.backend,
+            file_manager=self.file_manager,
+            enable_mlflow=self.enable_mlflow,
+            mlflow_tracking_uri=self.mlflow_tracking_uri
+        )
+        writer.write_config()
+        logger.info("Configuration file generation complete", format_level='h4')
+    
+    def _write_mlflow_setup(self) -> None:
+        """Generate and write MLflow setup file for the project.
+
+        This method creates an MLflow setup file that configures experiment
+        tracking for the project. The file includes tracking URI configuration
+        and experiment naming.
+        """
+        from bukka.coding.write_mlflow_setup import MLflowSetupWriter
+        
+        writer = MLflowSetupWriter(
+            file_manager=self.file_manager,
+            project_name=self.name,
+            tracking_uri=self.mlflow_tracking_uri
+        )
+        writer.write_code()
+        
+        # Create mlruns directory
+        self.file_manager.mlruns_path.mkdir(exist_ok=True)
+        
+        logger.info("MLflow setup file generation complete", format_level='h4')
+
+    def _write_mlflow_notebook(self) -> None:
+        """Generate and write MLflow tutorial notebook for the project.
+
+        This method creates a Jupyter notebook that demonstrates how to use
+        MLflow with the project's scripts/mlflow_setup.py for experiment tracking.
+        """
+        venv_path = None if self.skip_venv else self.file_manager.virtual_env
+        
+        mlflow_notebook_writer = MLflowNotebookWriter(
+            output_path=str(self.file_manager.mlflow_notebook_path),
+            venv_path=venv_path
+        )
+        
+        logger.info("Writing MLflow tutorial notebook")
+        mlflow_notebook_writer.write_notebook()
+        logger.info("MLflow notebook generation complete", format_level='h4')
 
     def _build_skeleton(self) -> None:
         """
@@ -226,7 +310,8 @@ class Project:
         
         logger.debug("Initializing EnvironmentBuilder")
         self.environ_manager = EnvironmentBuilder(
-            file_manager=self.file_manager
+            file_manager=self.file_manager,
+            enable_mlflow=self.enable_mlflow
         )
         logger.debug("EnvironmentBuilder initialized")
         
@@ -247,7 +332,10 @@ class Project:
         
         starter_notebook_writer = StarterNotebookWriter(
             output_path=str(self.file_manager.starter_notebook_path),
-            venv_path=venv_path
+            venv_path=venv_path,
+            target_column=self.target_column,
+            problem_type=self.problem_type,
+            enable_mlflow=self.enable_mlflow
         )
 
         logger.info("Writing starter notebook")

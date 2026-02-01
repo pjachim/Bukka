@@ -1,8 +1,7 @@
 # These are the dependencies created in new bukka projects.
 requirements= '''
 scikit-learn
-polars
-pandas
+narwhals
 seaborn
 numpy
 ipykernel

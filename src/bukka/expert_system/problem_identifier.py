@@ -28,7 +28,8 @@ class ProblemIdentifier:
 
     def identify_problems(self) -> None:
         """Identify problems in the dataset and populate `problems_to_solve`."""
-        self.multivariate_problems()
+        #TODO: Enable multivariate problem detection
+        #self.multivariate_problems()
         self.univariate_problems()
         self.identify_ml_problem()
 
@@ -70,48 +71,61 @@ class ProblemIdentifier:
         Args:
             feature: Name of the feature/column to inspect.
         """
+        # Get the column type for type-aware solution filtering
+        column_type = self.dataset.type_of_column(feature)
+        
         # Identify null/missing value problems
         if self.dataset.get_column_null_count(feature):
             problem = Problem(
                 problem_name="Null Values",
                 description=f"The feature '{feature}' contains null values.",
                 features=[feature],
-                solutions=[
-                    sol.null_solutions.mean_solution,
-                    sol.null_solutions.median_solution,
-                ],
+                solutions=[],
                 problem_type="transformer",
             )
+            # Add solutions with type checking
+            problem.add_solution(sol.null_solutions.mean_solution, column_type)
+            problem.add_solution(sol.null_solutions.median_solution, column_type)
             self.problems_to_solve.add_problem(problem)
 
         # Numeric-type specific checks (outliers)
-        if self.dataset.type_of_column(feature) in ["int", "float"]:
+        if column_type in ["int", "float"]:
             if self.dataset.has_outliers(feature):
                 problem = Problem(
                     problem_name="Outliers",
                     description=f"The feature '{feature}' contains outlier values.",
                     features=[feature],
-                    solutions=[
-                        sol.outlier_solutions.remove_outliers,
-                        sol.outlier_solutions.cap_outliers,
-                    ],
+                    solutions=[],
                     problem_type="transformer",
                 )
+                problem.add_solution(sol.outlier_solutions.cap_outliers, column_type)
                 self.problems_to_solve.add_problem(problem)
 
         # String/categorical-type specific checks
-        if self.dataset.type_of_column(feature) == "string":
-            if self.dataset.has_inconsistent_categorical_data(feature):
+        if column_type == "string":
+            # Check if this is a text column (for NLP)
+            if self.dataset.is_text_column(feature):
+                problem = Problem(
+                    problem_name="Text Data",
+                    description=f"The feature '{feature}' contains text data that may benefit from NLP preprocessing.",
+                    features=[feature],
+                    solutions=[],
+                    problem_type="transformer",
+                )
+                problem.add_solution(sol.text_solutions.tfidf_solution, column_type)
+                problem.add_solution(sol.text_solutions.countvectorizer_solution, column_type)
+                problem.add_solution(sol.text_solutions.hashingvectorizer_solution, column_type)
+                self.problems_to_solve.add_problem(problem)
+            elif self.dataset.has_inconsistent_categorical_data(feature):
                 problem = Problem(
                     problem_name="Inconsistent Categorical Data",
                     description=f"The feature '{feature}' contains inconsistent categorical data.",
                     features=[feature],
-                    solutions=[
-                        sol.categorical_solutions.standardize_categories,
-                        sol.categorical_solutions.encode_categories,
-                    ],
+                    solutions=[],
                     problem_type="transformer",
                 )
+                problem.add_solution(sol.categorical_solutions.standardize_categories, column_type)
+                problem.add_solution(sol.categorical_solutions.encode_categories, column_type)
                 self.problems_to_solve.add_problem(problem)
 
     def identify_ml_problem(self) -> str:

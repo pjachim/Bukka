@@ -19,6 +19,7 @@ mean_solution = solution.Solution(
     },
     function_import="from sklearn.impute import SimpleImputer",
     function_name="SimpleImputer",
+    compatible_types=["int", "float"],
 )
 
 median_solution = solution.Solution(
@@ -29,4 +30,5 @@ median_solution = solution.Solution(
     },
     function_import="from sklearn.impute import SimpleImputer",
     function_name="SimpleImputer",
+    compatible_types=["int", "float"],
 )

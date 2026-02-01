@@ -1,5 +1,4 @@
 from bukka.utils.files import file_manager
-import pyarrow.parquet as pq
 from bukka.utils.bukka_logger import BukkaLogger
 from bukka.data_management.dataset_functionality import (
     DatasetStatistics,
@@ -7,14 +6,16 @@ from bukka.data_management.dataset_functionality import (
     DatasetIO,
     DatasetQuality,
 )
+from narwhals.typing import FrameT
+import narwhals as nw
 logger = BukkaLogger(__name__)
 
 class Dataset:
     """Dataset class for managing and splitting datasets for expert systems.
     
-    This class loads, splits, and manages datasets, delegating backend operations
-    to pluggable implementations (default: Polars). It writes train/test splits as
-    Parquet files and exposes schema and feature metadata.
+    This class loads, splits, and manages datasets using Narwhals for dataframe
+    abstraction. It writes train/test splits as Parquet files and exposes schema
+    and feature metadata.
     
     Parameters
     ----------
@@ -42,9 +43,9 @@ class Dataset:
         List of feature column names.
     data_schema : dict[str, pyarrow.DataType]
         Schema of the training data (column names mapped to PyArrow data types).
-    train_df : polars.DataFrame
+    train_df : Narwhals DataFrame
         Training data split.
-    test_df : polars.DataFrame
+    test_df : Narwhals DataFrame
         Test data split.
     
     Examples
@@ -86,7 +87,11 @@ class Dataset:
         dataset_path = getattr(self.file_manager, 'dataset_path', None)
         if dataset_path is not None and dataset_path.exists():
             logger.debug(f"Loading dataset from: {dataset_path}")
-            df = self.io.load_from_file(dataset_path)
+            df = self.io.load_from_file(dataset_path, backend=self.backend)
+            
+            # Ensure we have a Narwhals DataFrame (for compatibility with tests/mocks)
+            if not hasattr(df, '__narwhals_dataframe__'):
+                df = nw.from_native(df)
             
             # Validate target column exists in the dataset
             if target_column and target_column not in df.columns:
@@ -131,9 +136,9 @@ class Dataset:
             self.feature_columns = feature_columns
 
         logger.debug(f"Reading schema from: {self.file_manager.train_data_file}")
-        schema = pq.read_schema(self.file_manager.train_data_file)
-        # Convert pyarrow.Schema to a plain dict of column_name -> pyarrow.DataType
-        self.data_schema = {field.name: field.type for field in schema}
+
+        self.data_schema = dict(self.train_df.schema)
+        
         logger.debug(f"Schema loaded with {len(self.data_schema)} columns")
         logger.debug("Dataset initialization complete")
     
@@ -279,7 +284,7 @@ class Dataset:
         Returns
         -------
         str
-            The simplified data type: 'int', 'float', 'string', or polars type name.
+            The simplified data type: 'int', 'float', 'string', or backend-specific type name.
         
         Examples
         --------
@@ -386,6 +391,30 @@ class Dataset:
         if columns is None:
             columns = self.feature_columns
         return self.statistics.does_data_have_multicollinearity(self.train_df, columns, threshold)
+    
+    def is_text_column(self, column: str, min_avg_length: int = 50) -> bool:
+        """Check if a column contains text data suitable for NLP tasks.
+        
+        Parameters
+        ----------
+        column : str
+            Name of the column to check.
+        min_avg_length : int, optional
+            Minimum average string length to be considered text. Defaults to 50.
+        
+        Returns
+        -------
+        bool
+            True if the column appears to contain text data, False otherwise.
+        
+        Examples
+        --------
+        >>> dataset = Dataset(target_column='label', file_manager=fm)
+        >>> is_text = dataset.is_text_column('description')
+        >>> print(is_text)
+        True
+        """
+        return self.quality.is_text_column(self.train_df, column, min_avg_length)
         
     def __repr__(self):
         return f"Dataset(target_column={self.target_column}, feature_columns={self.feature_columns})"
