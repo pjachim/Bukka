@@ -8,6 +8,7 @@ from bukka.data_management.dataset import Dataset
 from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
+from bukka.coding.write_mlflow_notebook import MLflowNotebookWriter
 from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
 from bukka.coding.write_config import ConfigWriter
 from bukka.utils.bukka_logger import BukkaLogger
@@ -148,6 +149,7 @@ class Project:
             if self.enable_mlflow:
                 logger.info("MLflow enabled, generating MLflow setup")
                 self._write_mlflow_setup()
+                self._write_mlflow_notebook()
             
             self._write_starter_notebook()
         else:
@@ -261,6 +263,23 @@ class Project:
         
         logger.info("MLflow setup file generation complete", format_level='h4')
 
+    def _write_mlflow_notebook(self) -> None:
+        """Generate and write MLflow tutorial notebook for the project.
+
+        This method creates a Jupyter notebook that demonstrates how to use
+        MLflow with the project's scripts/mlflow_setup.py for experiment tracking.
+        """
+        venv_path = None if self.skip_venv else self.file_manager.virtual_env
+        
+        mlflow_notebook_writer = MLflowNotebookWriter(
+            output_path=str(self.file_manager.mlflow_notebook_path),
+            venv_path=venv_path
+        )
+        
+        logger.info("Writing MLflow tutorial notebook")
+        mlflow_notebook_writer.write_notebook()
+        logger.info("MLflow notebook generation complete", format_level='h4')
+
     def _build_skeleton(self) -> None:
         """
         Build the project file skeleton using FileManager.
@@ -315,7 +334,8 @@ class Project:
             output_path=str(self.file_manager.starter_notebook_path),
             venv_path=venv_path,
             target_column=self.target_column,
-            problem_type=self.problem_type
+            problem_type=self.problem_type,
+            enable_mlflow=self.enable_mlflow
         )
 
         logger.info("Writing starter notebook")
