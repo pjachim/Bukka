@@ -64,9 +64,9 @@ class DatasetStatistics:
                 mean_i = df.select(nw.col(col_i).mean()).to_numpy()[0, 0]
                 mean_j = df.select(nw.col(col_j).mean()).to_numpy()[0, 0]
                 
-                # Get standard deviations
-                std_i = df.select(nw.col(col_i).std()).to_numpy()[0, 0]
-                std_j = df.select(nw.col(col_j).std()).to_numpy()[0, 0]
+                # Get standard deviations (using ddof=0 for population std)
+                std_i = df.select(nw.col(col_i).std(ddof=0)).to_numpy()[0, 0]
+                std_j = df.select(nw.col(col_j).std(ddof=0)).to_numpy()[0, 0]
                 
                 # Skip if either has zero standard deviation
                 if std_i == 0 or std_j == 0:
@@ -80,7 +80,7 @@ class DatasetStatistics:
                 # Compute correlation
                 corr_value = cov_value / (std_i * std_j)
                 
-                if abs(corr_value) > threshold:
+                if abs(corr_value) >= threshold:
                     correlated_pairs.append((col_i, col_j, corr_value))
         
         return correlated_pairs

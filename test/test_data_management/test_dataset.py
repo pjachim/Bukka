@@ -34,13 +34,23 @@ class TestDataset:
         # Create a fake dataset path that exists
         fm.dataset_path = tmp_path / 'source.csv'
         fm.dataset_path.touch()
+        
+        # Create directories for train/test data
+        fm.train_data.mkdir(parents=True, exist_ok=True)
+        fm.test_data.mkdir(parents=True, exist_ok=True)
 
-        # Import Dataset and monkeypatch DatasetIO.load_from_file to return test data
+        # Import Dataset and monkeypatch DatasetIO methods
         from bukka.data_management.dataset import Dataset
         from bukka.data_management.dataset_functionality import DatasetIO
         
         test_df = create_dummy_dataframe('target')
         monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path, backend=None: test_df)
+        
+        def save_parquet_to_disk(self, df, file_path, write_kwargs=None):
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            df.write_parquet(file_path)
+        
+        monkeypatch.setattr(DatasetIO, 'save_to_parquet', save_parquet_to_disk)
 
         dset = Dataset(target_column='target', file_manager=fm, train_size=0.5)
 
@@ -61,12 +71,22 @@ class TestDataset:
         fm.test_data_file = tmp_path / 'test' / 'test.parquet'
         fm.dataset_path = tmp_path / 'source.csv'
         fm.dataset_path.touch()
+        
+        # Create directories for train/test data
+        fm.train_data.mkdir(parents=True, exist_ok=True)
+        fm.test_data.mkdir(parents=True, exist_ok=True)
 
         from bukka.data_management.dataset import Dataset
         from bukka.data_management.dataset_functionality import DatasetIO
         
         test_df = create_dummy_dataframe('target')
         monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path, backend=None: test_df)
+        
+        def save_parquet_to_disk(self, df, file_path, write_kwargs=None):
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            df.write_parquet(file_path)
+        
+        monkeypatch.setattr(DatasetIO, 'save_to_parquet', save_parquet_to_disk)
 
         dset = Dataset(target_column='target', file_manager=fm, train_size=0.5)
 
@@ -83,12 +103,22 @@ class TestDataset:
         fm.test_data_file = tmp_path / 'test' / 'test.parquet'
         fm.dataset_path = tmp_path / 'source.csv'
         fm.dataset_path.touch()
+        
+        # Create directories for train/test data
+        fm.train_data.mkdir(parents=True, exist_ok=True)
+        fm.test_data.mkdir(parents=True, exist_ok=True)
 
         from bukka.data_management.dataset import Dataset
         from bukka.data_management.dataset_functionality import DatasetIO
         
         test_df = create_dummy_dataframe('target')
         monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path, backend=None: test_df)
+        
+        def save_parquet_to_disk(self, df, file_path, write_kwargs=None):
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            df.write_parquet(file_path)
+        
+        monkeypatch.setattr(DatasetIO, 'save_to_parquet', save_parquet_to_disk)
 
         # Provide explicit feature columns
         dset = Dataset(
