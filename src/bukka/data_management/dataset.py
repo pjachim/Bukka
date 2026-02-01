@@ -137,7 +137,7 @@ class Dataset:
 
         logger.debug(f"Reading schema from: {self.file_manager.train_data_file}")
 
-        self.data_schema = self.train_df.schema
+        self.data_schema = dict(self.train_df.schema)
         
         logger.debug(f"Schema loaded with {len(self.data_schema)} columns")
         logger.debug("Dataset initialization complete")
