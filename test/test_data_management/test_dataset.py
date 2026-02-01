@@ -45,7 +45,12 @@ class TestDataset:
         
         test_df = create_dummy_dataframe('target')
         monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path, backend=None: test_df)
-        monkeypatch.setattr(DatasetIO, 'save_to_parquet', lambda self, df, file_path, write_kwargs=None: None)
+        
+        def save_parquet_to_disk(self, df, file_path, write_kwargs=None):
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            df.write_parquet(file_path)
+        
+        monkeypatch.setattr(DatasetIO, 'save_to_parquet', save_parquet_to_disk)
 
         dset = Dataset(target_column='target', file_manager=fm, train_size=0.5)
 
@@ -76,7 +81,12 @@ class TestDataset:
         
         test_df = create_dummy_dataframe('target')
         monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path, backend=None: test_df)
-        monkeypatch.setattr(DatasetIO, 'save_to_parquet', lambda self, df, file_path, write_kwargs=None: None)
+        
+        def save_parquet_to_disk(self, df, file_path, write_kwargs=None):
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            df.write_parquet(file_path)
+        
+        monkeypatch.setattr(DatasetIO, 'save_to_parquet', save_parquet_to_disk)
 
         dset = Dataset(target_column='target', file_manager=fm, train_size=0.5)
 
@@ -103,7 +113,12 @@ class TestDataset:
         
         test_df = create_dummy_dataframe('target')
         monkeypatch.setattr(DatasetIO, 'load_from_file', lambda self, path, backend=None: test_df)
-        monkeypatch.setattr(DatasetIO, 'save_to_parquet', lambda self, df, file_path, write_kwargs=None: None)
+        
+        def save_parquet_to_disk(self, df, file_path, write_kwargs=None):
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            df.write_parquet(file_path)
+        
+        monkeypatch.setattr(DatasetIO, 'save_to_parquet', save_parquet_to_disk)
 
         # Provide explicit feature columns
         dset = Dataset(
