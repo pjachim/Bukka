@@ -338,9 +338,9 @@ Best Practices
 3. **Consistent Naming**: Use descriptive project names that reflect the task (e.g., ``fraud_detection`` not ``project1``).
 
 4. **Backend Selection**: 
-   - Use ``polars`` for fast data processing (default)
+   - Use ``polars`` for fast data processing (default, recommended)
    - Use ``pandas`` for compatibility with existing code
-   - Other backends coming soon!
+   - Other backends available: ``pyarrow``, ``modin``, ``cudf``, ``dask``
 
 5. **Problem Type**: Let Bukka auto-detect when unsure, or specify explicitly for better pipeline generation.
 
@@ -374,7 +374,16 @@ Solution: Provide the full or relative path to your dataset file.
 
    Error: Backend 'invalid' not supported
 
-Solution: Use a supported backend (currently: ``polars``).
+Solution: Use a supported backend.
+
+Supported backends (via Narwhals):
+
+* ``polars`` (default, recommended)
+* ``pandas``
+* ``pyarrow``
+* ``modin``
+* ``cudf``
+* ``dask``
 
 Next Steps
 ----------

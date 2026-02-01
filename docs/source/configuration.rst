@@ -401,10 +401,14 @@ Backend Validation
 
 * Must be a supported backend
 
-Supported backends:
+Supported backends (via Narwhals):
 
-* ``polars`` (default)
-* More coming soon!
+* ``polars`` (default, recommended)
+* ``pandas``
+* ``pyarrow``
+* ``modin``
+* ``cudf``
+* ``dask``
 
 .. code-block:: bash
 

@@ -191,7 +191,7 @@ The generated documentation will be in `docs/build/html/`.
 
 ## 🎶 About the Name
 
-The library is named after Bukka White, a country blues guitarist whorecorded from the late 30s and 40s, before being rediscovered in the 60s. One of my favorites by him is *Fixin' to Die Blues*. Country blues guitarists use their technical skill with the guitar to back their singing to create a very complete sound, using their thumb to play rhythym and their fingers to play a melodyand harmonize over that giving it the sound of multiple guitarists.
+The library is named after Bukka White, a country blues guitarist who recorded from the late 30s and 40s, before being rediscovered in the 60s. One of my favorites by him is *Fixin' to Die Blues*. Country blues guitarists use their technical skill with the guitar to back their singing to create a very complete sound, using their thumb to play rhythm and their fingers to play a melody and harmonize over that giving it the sound of multiple guitarists.
 
 The choice to name the library after a guitarist is inspired, like much of the rest of this project, by the library Django, named for Django Reinhardt, another phenomenal guitarist.
 
