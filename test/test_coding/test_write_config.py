@@ -63,7 +63,7 @@ class TestConfigWriterInitialization:
         >>> file_manager = MagicMock()
         >>> writer = ConfigWriter(
         ...     output_path="config.py",
-        ...     backend_name="polars",
+        ...     backend_name="pyarrow",
         ...     file_manager=file_manager
         ... )
         >>> assert writer.output_path == "config.py"
@@ -72,12 +72,12 @@ class TestConfigWriterInitialization:
         file_manager = MagicMock()
         writer = ConfigWriter(
             output_path="config.py",
-            backend_name="polars",
+            backend_name="pyarrow",
             file_manager=file_manager
         )
         
         assert writer.output_path == "config.py"
-        assert writer.backend_name == "polars"
+        assert writer.backend_name == "pyarrow"
         assert writer.file_manager is file_manager
 
     def test_config_writer_accepts_different_backends(self):
@@ -95,11 +95,11 @@ class TestConfigWriterInitialization:
         """
         file_manager = MagicMock()
         
-        writer_polars = ConfigWriter("config.py", "polars", file_manager)
-        assert writer_polars.backend_name == "polars"
+        writer_pyarrow = ConfigWriter("config.py", "pyarrow", file_manager)
+        assert writer_pyarrow.backend_name == "pyarrow"
         
-        writer_pandas = ConfigWriter("config.py", "pandas", file_manager)
-        assert writer_pandas.backend_name == "pandas"
+        writer_modin = ConfigWriter("config.py", "modin", file_manager)
+        assert writer_modin.backend_name == "modin"
 
 
 class TestConfigWriterWriteConfig:
@@ -119,7 +119,7 @@ class TestConfigWriterWriteConfig:
         ...     file_manager = MagicMock()
         ...     file_manager.train_file_relative_path = Path("data/train.parquet")
         ...     file_manager.test_file_relative_path = Path("data/test.parquet")
-        ...     writer = ConfigWriter(str(output_path), "polars", file_manager)
+        ...     writer = ConfigWriter(str(output_path), "pyarrow", file_manager)
         ...     writer.write_config()
         ...     assert output_path.exists()
         """
@@ -131,7 +131,7 @@ class TestConfigWriterWriteConfig:
             
             writer = ConfigWriter(
                 str(output_path),
-                "polars",
+                "pyarrow",
                 file_manager
             )
             writer.write_config()
@@ -152,7 +152,7 @@ class TestConfigWriterWriteConfig:
         ...     file_manager = MagicMock()
         ...     file_manager.train_file_relative_path = Path("data/train.parquet")
         ...     file_manager.test_file_relative_path = Path("data/test.parquet")
-        ...     writer = ConfigWriter(str(output_path), "pandas", file_manager)
+        ...     writer = ConfigWriter(str(output_path), "pyarrow", file_manager)
         ...     writer.write_config()
         ...     content = output_path.read_text()
         ...     assert "DATAFRAME_BACKEND = 'pandas'" in content
@@ -165,13 +165,13 @@ class TestConfigWriterWriteConfig:
             
             writer = ConfigWriter(
                 str(output_path),
-                "pandas",
+                "pyarrow",
                 file_manager
             )
             writer.write_config()
             
             content = output_path.read_text()
-            assert "DATAFRAME_BACKEND = 'pandas'" in content
+            assert "DATAFRAME_BACKEND = 'pyarrow'" in content
 
     def test_write_config_contains_dataset_paths(self):
         """Test that generated config file contains dataset paths.
@@ -187,7 +187,7 @@ class TestConfigWriterWriteConfig:
         ...     file_manager = MagicMock()
         ...     file_manager.train_file_relative_path = Path("data/train/train.parquet")
         ...     file_manager.test_file_relative_path = Path("data/test/test.parquet")
-        ...     writer = ConfigWriter(str(output_path), "polars", file_manager)
+        ...     writer = ConfigWriter(str(output_path), "pyarrow", file_manager)
         ...     writer.write_config()
         ...     content = output_path.read_text()
         ...     assert "TRAIN_DATASET_PATH" in content
@@ -201,7 +201,7 @@ class TestConfigWriterWriteConfig:
             
             writer = ConfigWriter(
                 str(output_path),
-                "polars",
+                "pyarrow",
                 file_manager
             )
             writer.write_config()
@@ -227,7 +227,7 @@ class TestConfigWriterWriteConfig:
         ...     file_manager = MagicMock()
         ...     file_manager.train_file_relative_path = Path("data/train.parquet")
         ...     file_manager.test_file_relative_path = Path("data/test.parquet")
-        ...     writer = ConfigWriter(str(output_path), "polars", file_manager)
+        ...     writer = ConfigWriter(str(output_path), "pyarrow", file_manager)
         ...     writer.write_config()
         ...     # Try to compile the generated code
         ...     content = output_path.read_text()
@@ -241,7 +241,7 @@ class TestConfigWriterWriteConfig:
             
             writer = ConfigWriter(
                 str(output_path),
-                "polars",
+                "pyarrow",
                 file_manager
             )
             writer.write_config()
@@ -264,7 +264,7 @@ class TestConfigWriterWriteConfig:
         ...     file_manager = MagicMock()
         ...     file_manager.train_file_relative_path = Path("data/train.parquet")
         ...     file_manager.test_file_relative_path = Path("data/test.parquet")
-        ...     writer = ConfigWriter(output_path, "polars", file_manager)
+        ...     writer = ConfigWriter(output_path, "pyarrow", file_manager)
         ...     writer.write_config()
         ...     assert output_path.exists()
         """
@@ -276,7 +276,7 @@ class TestConfigWriterWriteConfig:
             
             writer = ConfigWriter(
                 output_path,  # Path object
-                "polars",
+                "pyarrow",
                 file_manager
             )
             writer.write_config()

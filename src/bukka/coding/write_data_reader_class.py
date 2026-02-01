@@ -2,7 +2,6 @@ from bukka.utils.files.file_manager import FileManager
 
 CLASS_TEMPLATE = '''
 import narwhals as nw
-import polars as pl
 from config import DATAFRAME_BACKEND, TRAIN_DATASET_PATH, TEST_DATASET_PATH
 from narwhals.typing import FrameT
 
@@ -25,11 +24,11 @@ class DataReader:
 
     def read_train_data(self) -> FrameT:
         """Reads the training data from the training Parquet file."""
-        return self._read_file(self.train_filepath).to_native()
+        return self._read_file(self.train_filepath)
 
     def read_test_data(self) -> FrameT:
         """Reads the testing data from the testing Parquet file."""
-        return self._read_file(self.test_filepath).to_native()
+        return self._read_file(self.test_filepath)
 
     def _read_file(self, filepath: str) -> FrameT:
         """Reads a Parquet file and returns a Narwhals DataFrame."""
@@ -49,15 +48,10 @@ ADDITIONAL_SUPERVISED_METHODS = '''
 
     def _readXy(self, filepath: str, is_train: bool, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
         """Reads a Parquet file and splits it into features and target."""
-        if is_train:
-            df = nw.from_native(self.read_train_data())
-        else:
-            df = nw.from_native(self.read_test_data())
-
+        df = self._read_file(filepath)
         X = df.drop([target_column])
         y = df.select(nw.col(target_column))
-        
-        return X.to_native(), y.to_native()
+        return X, y
 '''
 
 class DataReaderWriter:

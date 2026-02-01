@@ -7,37 +7,56 @@ from bukka.coding.utils.template_handler import TemplateBaseClass
 from bukka.utils.files.file_manager import FileManager
 
 
-MLFLOW_SETUP_TEMPLATE = '''"""MLflow experiment tracking configuration.
+MLFLOW_SETUP_TEMPLATE = '''"""MLflow experiment tracking setup script.
 
-This module provides MLflow configuration and setup for tracking machine learning experiments.
+This module provides a utility to initialize MLflow tracking and write configuration
+to the project's config.py file.
 """
 import mlflow
 from pathlib import Path
 
 
-# MLflow configuration
-MLFLOW_TRACKING_URI = "{tracking_uri}"
-MLFLOW_EXPERIMENT_NAME = "{experiment_name}"
-
-
 def setup_mlflow() -> mlflow:
-    """Initialize MLflow tracking with project configuration.
+    """Initialize MLflow tracking with configuration from config.py.
     
-    Sets the tracking URI and experiment name for the current project.
+    Reads MLflow configuration from config.py and sets up MLflow tracking.
+    If MLflow configuration is not present in config.py, this function
+    will raise an ImportError.
     
     Returns
     -------
     mlflow
         The mlflow module with configured tracking.
     
+    Raises
+    ------
+    ImportError
+        If MLFLOW_TRACKING_URI or MLFLOW_EXPERIMENT_NAME are not defined in config.py.
+    
     Examples
     --------
+    >>> from scripts.mlflow_setup import setup_mlflow
     >>> mlflow_client = setup_mlflow()
     >>> # Start tracking your experiments
     >>> with mlflow.start_run():
     ...     mlflow.log_param("alpha", 0.5)
     ...     mlflow.log_metric("rmse", 0.85)
     """
+    import sys
+    from pathlib import Path
+    
+    # Add parent directory to path to import config
+    config_dir = Path(__file__).parent.parent
+    sys.path.insert(0, str(config_dir))
+    
+    try:
+        from config import MLFLOW_TRACKING_URI, MLFLOW_EXPERIMENT_NAME
+    except ImportError as e:
+        raise ImportError(
+            "MLflow configuration not found in config.py. "
+            "Please ensure config.py includes MLFLOW_TRACKING_URI and MLFLOW_EXPERIMENT_NAME."
+        ) from e
+    
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     return mlflow
@@ -45,6 +64,8 @@ def setup_mlflow() -> mlflow:
 
 if __name__ == "__main__":
     setup_mlflow()
+    # Read and display configuration
+    from config import MLFLOW_TRACKING_URI, MLFLOW_EXPERIMENT_NAME
     print(f"MLflow tracking URI: {{MLFLOW_TRACKING_URI}}")
     print(f"Experiment: {{MLFLOW_EXPERIMENT_NAME}}")
     print("\\nTo view experiments, run: mlflow ui")
@@ -97,14 +118,11 @@ class MLflowSetupWriter(TemplateBaseClass):
         if tracking_uri is None:
             tracking_uri = f"file:///{file_manager.mlruns_path}"
         
-        kwargs = {
-            "tracking_uri": tracking_uri,
-            "experiment_name": f"{project_name}_experiment"
-        }
+        kwargs = {}
         
         super().__init__(
             template=MLFLOW_SETUP_TEMPLATE,
             output_path=file_manager.mlflow_setup_path,
             kwargs=kwargs,
-            expected_args=["tracking_uri", "experiment_name"]
+            expected_args=[]
         )

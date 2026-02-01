@@ -61,15 +61,15 @@ class TestProjectInitialization:
         
         Examples
         --------
-        >>> proj = Project(name="proj", backend="pandas")
-        >>> assert proj.backend == "pandas"
+        >>> proj = Project(name="proj", backend="pyarrow")
+        >>> assert proj.backend == "pyarrow"
         """
         proj = Project(
             name="test_project",
-            backend="pandas"
+            backend="pyarrow"
         )
         
-        assert proj.backend == "pandas"
+        assert proj.backend == "pyarrow"
 
     def test_project_initialization_with_skip_venv(self):
         """Test Project initialization with skip_venv enabled.
@@ -469,12 +469,14 @@ class TestProjectMLflowIntegration:
                 enable_mlflow=True
             )
             
-            # Patch the _write_mlflow_setup method to verify it's called
-            with patch.object(proj, '_write_mlflow_setup') as mock_mlflow_setup:
+            # Patch the _write_mlflow_setup and _write_mlflow_notebook methods to verify they're called
+            with patch.object(proj, '_write_mlflow_setup') as mock_mlflow_setup, \
+                 patch.object(proj, '_write_mlflow_notebook') as mock_mlflow_notebook:
                 proj.run()
                 
-                # Verify _write_mlflow_setup was called
+                # Verify both methods were called
                 mock_mlflow_setup.assert_called_once()
+                mock_mlflow_notebook.assert_called_once()
         finally:
             # Cleanup
             Path(dataset_path).unlink(missing_ok=True)

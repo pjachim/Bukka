@@ -2,8 +2,6 @@
 requirements= '''
 scikit-learn
 narwhals
-polars
-pandas
 seaborn
 numpy
 ipykernel

@@ -11,7 +11,7 @@ import yaml
 
 
 # Narwhals-supported backends
-SUPPORTED_BACKENDS = ["polars", "pandas", "modin", "cudf", "pyarrow"]
+SUPPORTED_BACKENDS = ["modin", "cudf", "dask", "pyarrow"]
 
 # Problem types
 PROBLEM_TYPES = [
@@ -32,7 +32,7 @@ DEFAULT_CONFIG = {
         "mlflow_tracking_uri": None,
     },
     "data": {
-        "backend": "polars",
+        "backend": "pyarrow",
         "train_size": 0.8,
         "stratify": True,
         "strata": None,
@@ -64,7 +64,7 @@ class BukkaConfig:
     Examples:
         >>> config = BukkaConfig(name="my_project")
         >>> config.backend
-        'polars'
+        'pyarrow'
         >>> config.validate()  # Returns list of errors, empty if valid
         []
     """
@@ -77,7 +77,7 @@ class BukkaConfig:
     mlflow_tracking_uri: str | None = None
     
     # Data settings
-    backend: str = "polars"
+    backend: str = "pyarrow"
     train_size: float = 0.8
     stratify: bool = True
     strata: list[str] | None = None
@@ -103,7 +103,7 @@ class BukkaConfig:
             Configured BukkaConfig instance.
             
         Examples:
-            >>> args = argparse.Namespace(name="proj", dataset=None, backend="polars")
+            >>> args = argparse.Namespace(name="proj", dataset=None, backend="pyarrow")
             >>> config = BukkaConfig.from_args_and_config(args)
             >>> config.name
             'proj'
@@ -135,7 +135,7 @@ class BukkaConfig:
             skip_venv=get_value('skip_venv', ('project', 'skip_venv'), False),
             enable_mlflow=get_value('enable_mlflow', ('project', 'enable_mlflow'), False),
             mlflow_tracking_uri=get_value('mlflow_tracking_uri', ('project', 'mlflow_tracking_uri')),
-            backend=get_value('backend', ('data', 'backend'), 'polars'),
+            backend=get_value('backend', ('data', 'backend'), 'pyarrow'),
             train_size=get_value('train_size', ('data', 'train_size'), 0.8),
             stratify=get_value('stratify', ('data', 'stratify'), True),
             strata=get_value('strata', ('data', 'strata')),
@@ -219,8 +219,8 @@ class ConfigValidator:
             ValueError: If backend is not supported.
             
         Examples:
-            >>> ConfigValidator.validate_backend("polars")
-            'polars'
+            >>> ConfigValidator.validate_backend("pyarrow")
+            'pyarrow'
             >>> ConfigValidator.validate_backend("invalid")
             Traceback (most recent call last):
                 ...

@@ -27,12 +27,12 @@ class TestConfig:
         --------
         >>> from bukka.config import requirements
         >>> assert 'scikit-learn' in requirements
-        >>> assert 'polars' in requirements
+        >>> assert 'narwhals' in requirements
         """
         # Core ML and data packages
         assert 'scikit-learn' in requirements
-        assert 'polars' in requirements
-        assert 'pandas' in requirements
+        assert 'narwhals' in requirements
+        # 'pyarrow' is optional and may not be present
         assert 'numpy' in requirements
         
         # Visualization

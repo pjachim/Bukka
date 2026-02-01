@@ -12,6 +12,7 @@ class TestMLflowSetupWriter:
         """Test MLflowSetupWriter initializes correctly."""
         # Create a temporary FileManager
         project_path = tmp_path / "test_project"
+        project_path.mkdir()
         file_manager = FileManager(project_path=project_path, orig_dataset=None)
         
         # Create writer
@@ -20,14 +21,13 @@ class TestMLflowSetupWriter:
             project_name="test_project"
         )
         
-        # Verify attributes
-        assert writer.kwargs["experiment_name"] == "test_project_experiment"
-        assert "file:///" in writer.kwargs["tracking_uri"]
-        assert "mlruns" in writer.kwargs["tracking_uri"]
+        # Verify output_path is set correctly
+        assert writer.output_path == file_manager.mlflow_setup_path
     
     def test_mlflow_setup_writer_with_custom_uri(self, tmp_path):
         """Test MLflowSetupWriter with custom tracking URI."""
         project_path = tmp_path / "test_project"
+        project_path.mkdir()
         file_manager = FileManager(project_path=project_path, orig_dataset=None)
         
         custom_uri = "http://localhost:5000"
@@ -37,13 +37,17 @@ class TestMLflowSetupWriter:
             tracking_uri=custom_uri
         )
         
-        assert writer.kwargs["tracking_uri"] == custom_uri
-        assert writer.kwargs["experiment_name"] == "test_project_experiment"
+        # Verify output_path is set correctly
+        assert writer.output_path == file_manager.mlflow_setup_path
     
     def test_mlflow_setup_writer_creates_file(self, tmp_path):
         """Test that MLflowSetupWriter creates the setup file."""
         project_path = tmp_path / "test_project"
         project_path.mkdir()
+        # Ensure scripts directory exists
+        scripts_path = project_path / "scripts"
+        scripts_path.mkdir(exist_ok=True)
+        
         file_manager = FileManager(project_path=project_path, orig_dataset=None)
         
         writer = MLflowSetupWriter(
@@ -58,15 +62,18 @@ class TestMLflowSetupWriter:
         # Verify content
         content = file_manager.mlflow_setup_path.read_text()
         assert "import mlflow" in content
-        assert "MLFLOW_TRACKING_URI" in content
-        assert "MLFLOW_EXPERIMENT_NAME" in content
-        assert "test_project_experiment" in content
+        assert "def setup_mlflow()" in content
+        assert "from config import MLFLOW_TRACKING_URI, MLFLOW_EXPERIMENT_NAME" in content
         assert "setup_mlflow" in content
     
     def test_mlflow_setup_template_has_required_functions(self, tmp_path):
         """Test that generated MLflow setup has required functions."""
         project_path = tmp_path / "test_project"
         project_path.mkdir()
+        # Ensure scripts directory exists
+        scripts_path = project_path / "scripts"
+        scripts_path.mkdir(exist_ok=True)
+        
         file_manager = FileManager(project_path=project_path, orig_dataset=None)
         
         writer = MLflowSetupWriter(
@@ -81,6 +88,7 @@ class TestMLflowSetupWriter:
         assert "def setup_mlflow()" in content
         assert "mlflow.set_tracking_uri" in content
         assert "mlflow.set_experiment" in content
+        assert "from config import MLFLOW_TRACKING_URI, MLFLOW_EXPERIMENT_NAME" in content
         
         # Check for main block
         assert 'if __name__ == "__main__"' in content

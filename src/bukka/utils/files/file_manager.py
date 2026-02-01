@@ -37,6 +37,10 @@ class FileManager:
         Path to the project's virtual environment directory (project_path / '.venv').
     scripts : Path
         Path to the 'scripts' directory.
+    mlflow_setup_path : Path
+        Path for the 'mlflow_setup.py' file in scripts directory.
+    mlflow_notebook_path : Path
+        Path for the 'mlflow_notebook.ipynb' file.
     dataset_path : Path
         The final destination path for the copied dataset (data_path / dataset_filename).
     starter_notebook_path : Path
@@ -109,6 +113,9 @@ class FileManager:
         # Utils path (treated as a Python package)
         self.utils: Path = self.project_path / 'utils'
         self.data_reader_path: Path = self.utils / 'data_reader.py'
+        # Scripts path (treated as a Python package)
+        self.scripts: Path = self.project_path / 'scripts'
+        self.mlflow_setup_path: Path = self.scripts / 'mlflow_setup.py'
 
         # Determine the final dataset path within the 'data' directory.
         # It uses the original file's name.
@@ -118,6 +125,7 @@ class FileManager:
         # Paths for standard files (these will not be created by build_skeleton
         # but are tracked for consistency/future methods)
         self.starter_notebook_path: Path = self.project_path / 'starter.ipynb'
+        self.mlflow_notebook_path: Path = self.project_path / 'mlflow_notebook.ipynb'
         self.requirements_path: Path = self.project_path / 'requirements.txt'
         self.readme_path: Path = self.project_path / 'README.md'
         self.gitignore_path: Path = self.project_path / '.gitignore'
@@ -125,7 +133,6 @@ class FileManager:
         
         # MLflow paths
         self.mlruns_path: Path = self.project_path / 'mlruns'
-        self.mlflow_setup_path: Path = self.project_path / 'mlflow_setup.py'
 
     def _make_path(self, path: Path) -> None:
         """
@@ -178,6 +185,10 @@ class FileManager:
         self._make_path(self.utils)
         # Create __init__.py to make 'utils' a package
         (self.utils / '__init__.py').touch()
+
+        self._make_path(self.scripts)
+        # Create __init__.py to make 'scripts' a package
+        (self.scripts / '__init__.py').touch()
 
         # --- 4. Copy Dataset ---
         # The copy2 function is used as it attempts to preserve metadata (like timestamps).

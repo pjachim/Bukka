@@ -161,7 +161,7 @@ Examples:
   python -m bukka run --config bukka_config.yaml
   
   # Specify backend and problem type
-  python -m bukka run -n my_proj -d data.csv -t label --backend pandas --problem-type regression
+    python -m bukka run -n my_proj -d data.csv -t label --backend polars --problem-type regression
   
   # Create project structure only (no dataset yet)
   python -m bukka run --name my_project --skip-venv
