@@ -41,18 +41,18 @@ def print_project_success(config: BukkaConfig) -> None:
     
     print(f"\nProject location: {Path(config.name).absolute()}")
     print(f"\nNext steps:")
-    print(f"  1. cd {config.name}")
+    print(f"  - cd {config.name}")
     
     if not config.skip_venv:
-        print(f"  2. Activate the virtual environment")
+        print(f"  - Activate the virtual environment")
         print(f"     Windows: .venv\\Scripts\\activate")
         print(f"     Linux/Mac: source .venv/bin/activate")
     
     if config.dataset:
-        print(f"  3. Review the generated pipeline in pipelines/generated/")
-        print(f"  4. Open notebooks/starter_notebook.ipynb to begin experimentation")
+        print(f"  - Review the generated pipeline in pipelines/generated/")
+        print(f"  - Open notebooks/starter_notebook.ipynb to begin experimentation")
     else:
-        print(f"  2. Add your dataset and run: python -m bukka run --name {config.name} --dataset <path>")
+        print(f"  - Add your dataset and run: python -m bukka run --name {config.name} --dataset <path>")
 
 
 def create_config_template(args: argparse.Namespace) -> None:

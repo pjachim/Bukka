@@ -11,7 +11,14 @@ import yaml
 
 
 # Narwhals-supported backends
-SUPPORTED_BACKENDS = ["modin", "cudf", "dask", "pyarrow"]
+SUPPORTED_BACKENDS = [
+    'polars',
+    'pandas',
+    'modin',
+    'cudf',
+    'pyarrow',
+    'dask',
+]
 
 # Problem types
 PROBLEM_TYPES = [
