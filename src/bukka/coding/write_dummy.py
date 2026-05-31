@@ -9,7 +9,7 @@ pipeline = Pipeline([
 ])'''
 
 DUMMY_MAPPING = {
-    'classification': 'DummyClassifier',
+    'binary_classification': 'DummyClassifier',
     'multiclass_classification': 'DummyClassifier',
     'regression': 'DummyRegressor',
 }
@@ -32,7 +32,6 @@ class DummyWriter:
     def write_dummy_class(self) -> None:
         """Writes the dummy model class to the specified output path."""
         content = PIPELINE_TEMPLATE.format(dummy_model=DUMMY_MAPPING[self.model_type])
-        write_path = self.file_manager.generated_pipes / 'dummy_pipe.py'
-
-        with open(write_path, 'w') as f:
+        
+        with open(self.file_manager.dummy_pipe_path, 'w') as f:
             f.write(content)

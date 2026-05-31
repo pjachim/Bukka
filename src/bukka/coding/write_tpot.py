@@ -14,7 +14,7 @@ pipeline = Pipeline([
 ])'''
 
 TPOT_MAPPING = {
-    'classification': 'TPOTClassifier',
+    'binary_classification': 'TPOTClassifier',
     'multiclass_classification': 'TPOTClassifier',
     'regression': 'TPOTRegressor',
 }
@@ -37,7 +37,6 @@ class TPOTWriter:
     def write_tpot_pipeline(self) -> None:
         """Writes the TPOT model class to the specified output path."""
         content = PIPELINE_TEMPLATE.format(tpot_model=TPOT_MAPPING[self.model_type])
-        write_path = self.file_manager.generated_pipes / 'tpot_pipe.py'
-
-        with open(write_path, 'w') as f:
+    
+        with open(self.file_manager.tpot_pipe_path, 'w') as f:
             f.write(content)
