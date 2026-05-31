@@ -1,10 +1,10 @@
-# 📖 bukka: Django-Inspired ML Infrastructure CLI
+# bukka: Django-Inspired ML Infrastructure CLI
 
-**bukka** is a Python command-line interface (CLI) tool designed to dramatically reduce the boilerplate and setup time for new Machine Learning (ML) projects. Inspired by the structure and speed of the Django framework's `startproject` command, `bukka` lets you instantly scaffold a robust, standardized, and ready-to-use project infrastructure.
+**bukka** is a Python command-line interface (CLI) tool designed to reduce boilerplate and setup time for new machine learning projects. Inspired by the structure and speed of the Django framework's `startproject` command, `bukka` lets you instantly scaffold a robust, standardized, and ready-to-use project infrastructure.
 
 -----
 
-## ✨ Features
+## Features
 
   * **Django-Inspired Structure:** Creates a logical, maintainable folder hierarchy optimized for ML workflows (data, models, notebooks, scripts).
   * **Automated Environment Setup:** Automatically generates a Python virtual environment (`.venv`) to isolate your project dependencies.
@@ -12,12 +12,11 @@
   * **YAML Configuration:** Use configuration files for complex project setups with `init-config` command.
   * **Multiple Backends (Coming Soon!):** Support for various dataframe backends via narwhals (polars~~, pandas, modin, cudf, dask, pyarrow~~).
   * **Problem Type Detection:** Automatic ML problem identification or explicit specification (classification, regression, clustering).
-  * **Intelligent Pipeline Generation:** Automatically generates ML pipelines based on dataset analysis.
   * **CLI Simplicity:** Use simple, intuitive commands with subcommands to create a complete project skeleton in seconds.
 
 -----
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1\. Installation
 
@@ -76,16 +75,14 @@ This command will:
 4.  Install the packages in the requirements.txt
 5.  Copy the data file to your data folder
 6.  Split the dataset into training and test sets
-7.  Analyze your dataset and generate pipelines based on detected problems
-8.  Provide placeholder utility classes you can customize
-9.  Provide starter notebooks, so you can get to machine learning ASAP
+7.  Provide placeholder utility classes you can customize
+8.  Provide starter notebooks, so you can get to machine learning ASAP
 
 (Coming soon):
 
-10. Initialize MLFlow to track your parameters and results
-11. Provide baseline models for comparison (e.g., random guessing)
+9. Initialize MLFlow to track your parameters and results
 
-## 🌳 Standard Project Structure
+## Standard Project Structure
 
 When you run `python -m bukka run --name <name>`, the following standardized structure is created, ensuring consistency across all your ML projects:
 
@@ -108,7 +105,7 @@ When you run `python -m bukka run --name <name>`, the following standardized str
 └── requirements.txt               # Dependency list for pip
 ```
 
-## 📋 CLI Commands
+## CLI Commands
 
 ### Available Commands
 
@@ -168,7 +165,7 @@ python -m bukka run --config bukka_config.yaml
 
 -----
 
-## 📚 Documentation
+## Documentation
 
 Full documentation is available on [Read the Docs](https://bukka.readthedocs.io/):
 
@@ -177,19 +174,9 @@ Full documentation is available on [Read the Docs](https://bukka.readthedocs.io/
 - **[API Reference](https://bukka.readthedocs.io/en/latest/api_reference.html)**: Detailed API documentation
 - **[Configuration](https://bukka.readthedocs.io/en/latest/configuration.html)**: Guide to YAML configuration files
 
-To build the documentation locally:
-
-```bash
-cd docs
-pip install -r requirements.txt
-make html
-```
-
-The generated documentation will be in `docs/build/html/`.
-
 -----
 
-## 🎶 About the Name
+## About the Name
 
 The library is named after Bukka White, a country blues guitarist who recorded from the late 30s and 40s, before being rediscovered in the 60s. One of my favorites by him is *Fixin' to Die Blues*. Country blues guitarists use their technical skill with the guitar to back their singing to create a very complete sound, using their thumb to play rhythm and their fingers to play a melody and harmonize over that giving it the sound of multiple guitarists.
 
@@ -197,12 +184,12 @@ The choice to name the library after a guitarist is inspired, like much of the r
 
 -----
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions\! If you have suggestions for new structural templates, essential starter packages, or commands, please open an issue or submit a pull request.
 
 -----
 
-## 📄 License
+## License
 
 This project is licensed under the Apache License. See the `LICENSE` file for details.

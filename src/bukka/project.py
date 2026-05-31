@@ -1,18 +1,20 @@
-from datetime import datetime
-from pathlib import Path
-from typing import Optional
+#from datetime import datetime
+#from pathlib import Path
+#from typing import Optional
 
 from bukka.utils.files.file_manager import FileManager
 from bukka.environment.environment import EnvironmentBuilder
 from bukka.data_management.dataset import Dataset
-from bukka.coding.write_pipeline import PipelineWriter
+#from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
 from bukka.coding.write_mlflow_notebook import MLflowNotebookWriter
 from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
 from bukka.coding.write_config import ConfigWriter
+from bukka.coding.write_tpot import TPOTWriter
+from bukka.coding.write_dummy import DummyWriter
 from bukka.utils.bukka_logger import BukkaLogger
-from bukka.expert_system.pipeline_builder import PipelineBuilder
+#from bukka.expert_system.pipeline_builder import PipelineBuilder
 
 logger = BukkaLogger(__name__)
 
@@ -79,7 +81,9 @@ class Project:
             problem_type: str = "auto",
             train_size: float = 0.8,
             stratify: bool = True,
-            strata: list[str] | None = None
+            strata: list[str] | None = None,
+            dummy: bool = False,
+            tpot: bool = False
         ) -> None:
         """Initialize a Project instance.
 
@@ -95,6 +99,8 @@ class Project:
             train_size: Train/test split ratio (default: 0.8).
             stratify: Whether to stratify the split (default: True).
             strata: Column(s) for stratification (default: None).
+            dummy: Whether to add a dummy model (default: False).
+            tpot: Whether to add a TPOT model (default: False).
         """
         logger.info(f"Initializing Project: '{name}'")
         logger.debug(f"Dataset path: {dataset_path}")
@@ -116,7 +122,8 @@ class Project:
         self.train_size: float = train_size
         self.stratify: bool = stratify
         self.strata: list[str] | None = strata
-        
+        self.dummy: bool = dummy
+        self.tpot: bool = tpot
         logger.debug("Project instance created")
 
     def run(self) -> None:
@@ -137,14 +144,19 @@ class Project:
 
         if self.dataset_path:
             logger.info("Dataset path provided, generating pipeline")
-            self._write_pipeline(
-                target_column=self.target_column,
-                dataframe_backend=self.backend,
-                strata=self.strata,
-                stratify=self.stratify
-            )
+            self._split_dataset()
             self._write_data_reader_class()
             self._write_config()
+            
+            if self.dummy:
+                logger.info("Dummy model enabled, generating dummy pipeline")
+                dummy_writer = DummyWriter(self.file_manager, model_type=self.problem_type)
+                dummy_writer.write_dummy_class()
+            
+            if self.tpot:
+                logger.info("TPOT model enabled, generating TPOT pipeline")
+                tpot_writer = TPOTWriter(self.file_manager, model_type=self.problem_type)
+                tpot_writer.write_tpot_pipeline()
             
             if self.enable_mlflow:
                 logger.info("MLflow enabled, generating MLflow setup")
@@ -157,62 +169,81 @@ class Project:
         
         logger.info(f"Project setup complete for '{self.name}'", format_level='h4')
 
-    def _write_pipeline(
-            self,
-            target_column: str,
-            dataframe_backend: str = "polars",
-            strata: list[str] | None = None,
-            stratify: bool = True,
-        ):
-        """Generate a candidate pipeline and save it to the project pipelines folder.
-
-        This method creates a `Dataset` using the project's `FileManager`, runs
-        the expert system `ProblemIdentifier` to detect problems and select
-        solutions, and then uses `PipelineWriter` to produce pipeline code.
-
-        The resulting pipeline text is written to a timestamped file under
-        `FileManager.generated_pipes` and the file path is returned.
-
-        Args:
-            target_column: Name of the target column in the dataset (pass
-                `None` only if clustering is intended and the Dataset
-                backend supports a None target — otherwise provide the
-                appropriate column name).
-            dataframe_backend: The dataframe backend to use when creating
-                the `Dataset` (default: `'polars'`).
-
-        Returns:
-            The absolute path (string) of the written pipeline file.
+    def _split_dataset(self) -> None:
         """
-        logger.info("Starting pipeline generation", format_level='h4')
-        logger.debug(f"Target column: {target_column}")
-        logger.debug(f"Dataframe backend: {dataframe_backend}")
-
-        logger.info("Creating Dataset instance")
-        dataset = Dataset(
-            target_column, 
-            self.file_manager,
-            strata=strata,
-            stratify=stratify,
+        Split the dataset into training and testing sets based on the specified
+        train_size and stratification settings.
+        """
+        if not self.dataset_path:
+            logger.warning("No dataset path provided, skipping dataset split")
+            return
+        
+        logger.info("Splitting dataset into training and testing sets")
+        dataset: Dataset = Dataset(
+            target_column=self.target_column,
+            file_manager=self.file_manager,
+            strata=self.strata,
+            stratify=self.stratify,
             train_size=self.train_size,
-            backend=dataframe_backend
+            backend=self.backend
         )
-        logger.debug("Dataset instance created")
-        builder = PipelineBuilder(dataset, target_column, problem_type=self.problem_type)
-        pipeline_steps = builder.build_pipeline()
-
-        # Generate pipeline
-        timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-        filename = f"pipeline_{timestamp}.py"
-
-        logger.info("Generating pipeline code")
-        writer = PipelineWriter(
-            pipeline_steps=pipeline_steps,
-            output_path=self.file_manager.generated_pipes / filename
-        )
-        writer.write_code()
-        logger.debug(f"Pipeline written to: {self.file_manager.generated_pipes / filename}")
-        logger.info("Pipeline generation complete", format_level='h4')
+        logger.info("Dataset split complete")
+    #def _write_pipeline(
+    #        self,
+    #        target_column: str,
+    #        dataframe_backend: str = "polars",
+    #        strata: list[str] | None = None,
+    #        stratify: bool = True,
+    #    ):
+    #    """Generate a candidate pipeline and save it to the project pipelines folder.
+    #
+    #    This method creates a `Dataset` using the project's `FileManager`, runs
+    #    the expert system `ProblemIdentifier` to detect problems and select
+    #    solutions, and then uses `PipelineWriter` to produce pipeline code.
+    #
+    #    The resulting pipeline text is written to a timestamped file under
+    #    `FileManager.generated_pipes` and the file path is returned.
+    #
+    #    Args:
+    #        target_column: Name of the target column in the dataset (pass
+    #            `None` only if clustering is intended and the Dataset
+    #            backend supports a None target — otherwise provide the
+    #            appropriate column name).
+    #        dataframe_backend: The dataframe backend to use when creating
+    #            the `Dataset` (default: `'polars'`).
+    #
+    #    Returns:
+    #        The absolute path (string) of the written pipeline file.
+    #    """
+    #    logger.info("Starting pipeline generation", format_level='h4')
+    #    logger.debug(f"Target column: {target_column}")
+    #    logger.debug(f"Dataframe backend: {dataframe_backend}")
+    #
+    #    logger.info("Creating Dataset instance")
+    #    dataset = Dataset(
+    #        target_column, 
+    #        self.file_manager,
+    #        strata=strata,
+    #        stratify=stratify,
+    #        train_size=self.train_size,
+    #        backend=dataframe_backend
+    #    )
+    #    logger.debug("Dataset instance created")
+    #    builder = PipelineBuilder(dataset, target_column, problem_type=self.problem_type)
+    #    pipeline_steps = builder.build_pipeline()
+    #
+    #    # Generate pipeline
+    #    timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    #    filename = f"pipeline_{timestamp}.py"
+    #
+    #    logger.info("Generating pipeline code")
+    #    writer = PipelineWriter(
+    #        pipeline_steps=pipeline_steps,
+    #        output_path=self.file_manager.generated_pipes / filename
+    #    )
+    #    writer.write_code()
+    #    logger.debug(f"Pipeline written to: {self.file_manager.generated_pipes / filename}")
+    #    logger.info("Pipeline generation complete", format_level='h4')
     
     def _write_data_reader_class(self) -> None:
         """Generate and write a data reader class to the project.
