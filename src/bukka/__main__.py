@@ -268,15 +268,25 @@ For more information, visit: https://github.com/pjachim/Bukka
         nargs='+',
         help='Column(s) to use for stratification'
     )
-    
+    data_group.add_argument(
+        '--dummy',
+        action='store_true',
+        help='Add dummy model for baseline comparison'
+    )
+    data_group.add_argument(
+        '--tpot',
+        action='store_true',
+        help='Add TPOT model for automated machine learning'
+    )
+
     # Problem specification
     problem_group = run_parser.add_argument_group('problem specification')
     problem_group.add_argument(
         '--problem-type', '-p',
         type=str,
         choices=PROBLEM_TYPES,
-        default=None,
-        help=f'ML problem type (default: auto). Options: {', '.join(PROBLEM_TYPES)}'
+        default='other',
+        help=f'ML problem type (default: other). Options: {', '.join(PROBLEM_TYPES)}'
     )
     
     # Parse arguments

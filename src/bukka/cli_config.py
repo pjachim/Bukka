@@ -25,8 +25,7 @@ PROBLEM_TYPES = [
     "binary_classification",
     "multiclass_classification", 
     "regression",
-    "clustering",
-    "auto"  # Let the system detect the problem type
+    "other", # For unsupervised or custom tasks
 ]
 
 DEFAULT_CONFIG = {
@@ -91,6 +90,10 @@ class BukkaConfig:
     
     # Problem settings
     problem_type: str = "auto"
+
+    # pipeline settings
+    dummy: bool = False
+    tpot: bool = False
     
     @classmethod
     def from_args_and_config(
@@ -147,6 +150,8 @@ class BukkaConfig:
             stratify=get_value('stratify', ('data', 'stratify'), True),
             strata=get_value('strata', ('data', 'strata')),
             problem_type=get_value('problem_type', ('problem', 'type'), 'auto'),
+            dummy=get_value('dummy', ('pipeline', 'dummy'), False),
+            tpot=get_value('tpot', ('pipeline', 'tpot'), False),
         )
     
     def validate(self) -> list[str]:
@@ -206,6 +211,8 @@ class BukkaConfig:
             'train_size': self.train_size,
             'stratify': self.stratify,
             'strata': self.strata,
+            'dummy': self.dummy,
+            'tpot': self.tpot,
         }
 
 
