@@ -4,7 +4,7 @@ Getting Started
 Installation
 ------------
 
-Bukka is available on PyPI and can be installed using pip:
+Bukka is available on PyPI and can be installed with pip:
 
 .. code-block:: bash
 
@@ -18,26 +18,26 @@ Requirements:
 * numpy >= 2.0.0
 
 Creating Your First Project
-----------------------------
+---------------------------
 
-The simplest way to create a new ML project is using the ``run`` command:
+The quickest way to start is with the ``run`` command:
 
 .. code-block:: bash
 
    python -m bukka run --name my_project --dataset data.csv --target target_column
 
-This will create a complete project structure with:
+This creates the standard project scaffold:
 
-* Virtual environment (``.venv/``)
-* Data directory with train/test splits
-* Pipeline directory with auto-generated pipelines
-* Starter Jupyter notebook
-* Utility classes and functions
+* A project folder with the Bukka layout.
+* A virtual environment unless you pass ``--skip-venv``.
+* A copied dataset and train/test splits.
+* Starter files for configuration, data loading, and notebooks.
+* Optional extras such as MLflow, dummy, or TPOT files.
 
 Example: Binary Classification
--------------------------------
+------------------------------
 
-Let's create a project for predicting Titanic survival:
+Predicting Titanic survival looks like this:
 
 .. testcode::
 
@@ -53,7 +53,7 @@ Let's create a project for predicting Titanic survival:
        f.write('3,1,3,Miss. Laina,female,26\\n')
        csv_file = f.name
    
-   # The bukka run command would be:
+   # The command would be:
    # python -m bukka run --name titanic --dataset titanic.csv --target Survived
 
 .. testcleanup::
@@ -65,7 +65,7 @@ Let's create a project for predicting Titanic survival:
 Example: Regression Project
 ----------------------------
 
-For predicting continuous values like house prices:
+Predicting a numeric target such as house price:
 
 .. testcode::
 
@@ -79,7 +79,7 @@ For predicting continuous values like house prices:
        f.write('1200,2,1,250000\\n')
        csv_file = f.name
    
-   # The bukka run command would be:
+   # The command would be:
    # python -m bukka run --name housing --dataset housing.csv --target price --problem-type regression
 
 .. testcleanup::
@@ -89,9 +89,9 @@ For predicting continuous values like house prices:
        os.unlink(csv_file)
 
 Using the Project Class
-------------------------
+-----------------------
 
-You can also use Bukka programmatically via the Project class:
+You can also use Bukka programmatically if you need to script the setup step:
 
 .. testcode::
 
@@ -142,6 +142,6 @@ When you create a project, Bukka generates this structure:
 Next Steps
 ----------
 
-* Learn about :doc:`usage_examples` for common scenarios
-* Explore the :doc:`api_reference` for detailed API documentation
-* Check out :doc:`configuration` for advanced project setup
+* Read :doc:`usage_examples` for CLI patterns.
+* Read :doc:`configuration` if you prefer YAML over flags.
+* Read :doc:`api_reference` only if you need the modules behind the CLI.
