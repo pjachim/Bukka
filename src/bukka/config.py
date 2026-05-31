@@ -5,6 +5,7 @@ narwhals
 seaborn
 numpy
 ipykernel
+tpot
 '''
 
 import logging
