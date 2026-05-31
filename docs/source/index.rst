@@ -20,17 +20,15 @@ infrastructure.
 Features
 --------
 
-✨ **Django-Inspired Structure**: Creates a logical, maintainable folder hierarchy optimized for ML workflows.
+**Django-Inspired Structure**: Creates a logical, maintainable folder hierarchy optimized for ML workflows.
 
-🚀 **Automated Environment Setup**: Automatically generates a Python virtual environment.
+**Automated Environment Setup**: Automatically generates a Python virtual environment.
 
-📦 **Dependency Management**: Creates a starting requirements.txt file with essential ML packages.
+**Dependency Management**: Creates a starting requirements.txt file with essential ML packages.
 
-⚙️ **YAML Configuration**: Use configuration files for complex project setups.
+**YAML Configuration**: Use configuration files for complex project setups.
 
-🔍 **Problem Type Detection**: Automatic ML problem identification or explicit specification.
-
-🤖 **Intelligent Pipeline Generation**: Automatically generates ML pipelines based on dataset analysis.
+**Intelligent Pipeline Generation**: Automatically generates ML pipelines based on dataset analysis.
 
 Quick Start
 -----------
@@ -54,8 +52,13 @@ This command will:
 3. Generate initial dependency files
 4. Install packages
 5. Copy and split your dataset
-6. Analyze your data and generate pipelines
-7. Provide starter notebooks
+6. Provide starter notebooks
+7. Provide code imports from `titanic`, i.e. from `titanic.utils import ...` to make your code more modular and reusable.
+8. Write data loading scripts
+
+This command can be further enhanced by adding additional arguments, like:
+ - `--dummy` or `--tpot`to generate a dummy pipeline or a TPOT pipeline.
+ - `--config` to specify a YAML configuration file for more complex setups.
 
 Indices and tables
 ==================
