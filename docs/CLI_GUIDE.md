@@ -1,28 +1,28 @@
 # Bukka CLI Guide
 
-This guide covers the enhanced CLI features for Bukka, the ML Project Scaffolding Tool.
+Bukka is a command-line tool for starting a machine learning project without spending time on hand-built scaffolding. The CLI does the routine setup work: it creates the project layout, writes the config files, copies the dataset, and sets up the starting files you are meant to edit.
 
-## Table of Contents
+## Contents
 
 - [Overview](#overview)
 - [Installation](#installation)
 - [Commands](#commands)
   - [init-config](#init-config)
   - [run](#run)
-- [Configuration File](#configuration-file)
+- [Configuration file](#configuration-file)
 - [Examples](#examples)
-- [Input Validation](#input-validation)
+- [Help](#help)
 
 ## Overview
 
-The Bukka CLI provides a robust interface for creating machine learning project scaffolds with automatic pipeline generation. It supports:
+The main entry point is `python -m bukka run`. The CLI supports:
 
-- ✅ YAML configuration files
-- ✅ Multiple dataframe backends (Polars, Pandas, Modin, cuDF, Dask, PyArrow)
-- ✅ Problem type specification (classification, regression, clustering)
-- ✅ MLflow experiment tracking integration
-- ✅ Comprehensive input validation
-- ✅ Detailed help documentation
+- YAML configuration files
+- Multiple dataframe backends
+- Explicit problem type selection
+- Optional MLflow setup
+- Optional dummy and TPOT helpers
+- Train/test split controls
 
 ## Installation
 
@@ -30,298 +30,151 @@ The Bukka CLI provides a robust interface for creating machine learning project 
 pip install bukka
 ```
 
-Make sure PyYAML is installed (it's included in the dependencies).
-
 ## Commands
 
-### init-config
+### `init-config`
 
-Create a YAML configuration template with default values and documentation.
+Create a starter YAML configuration file.
 
-**Usage:**
 ```bash
 python -m bukka init-config [--output OUTPUT]
 ```
 
-**Arguments:**
-- `--output, -o`: Output path for the config template (default: `bukka_config.yaml`)
+Arguments:
 
-**Example:**
+- `--output`, `-o`: Output path for the generated config file. Defaults to `bukka_config.yaml`.
+
+Examples:
+
 ```bash
 python -m bukka init-config
 python -m bukka init-config --output my_project_config.yaml
 ```
 
-### run
+### `run`
 
-Create and set up a Bukka ML project with automatic pipeline generation.
+Create and set up a Bukka project.
 
-**Usage:**
 ```bash
 python -m bukka run [OPTIONS]
 ```
 
-**Configuration Options:**
-- `--config, -c`: Path to YAML configuration file (overrides other arguments)
+Configuration source:
 
-**Project Settings:**
-- `--name, -n`: Project name / directory to create (required unless using --config)
-- `--dataset, -d`: Path to dataset file (CSV, Parquet, etc.)
-- `--target, -t`: Name of the target column (omit for clustering)
-- `--skip-venv, -sv`: Skip virtual environment creation
-- `--mlflow`: Enable MLflow experiment tracking
-- `--mlflow-tracking-uri`: MLflow tracking URI (default: mlruns/ in project directory)
+- `--config`, `-c`: Path to a YAML config file.
 
-**Data Processing:**
-- `--backend, -b`: Dataframe backend (default: polars)
-  - Choices: `polars`, `pandas`, `modin`, `cudf`, `dask`, `pyarrow`
-- `--train-size`: Train/test split ratio (default: 0.8)
-- `--stratify`: Stratify train/test split (default: True)
-- `--no-stratify`: Disable stratified splitting
-- `--strata`: Column(s) to use for stratification
+Project settings:
 
-**Problem Specification:**
-- `--problem-type, -p`: ML problem type (default: auto)
-  - Choices: `binary_classification`, `multiclass_classification`, `regression`, `clustering`, `auto`
+- `--name`, `-n`: Project name or directory.
+- `--dataset`, `-d`: Path to the dataset file.
+- `--target`, `-t`: Target column name.
+- `--skip-venv`, `-sv`: Skip virtual environment creation.
+- `--mlflow`: Enable MLflow setup.
+- `--mlflow-tracking-uri`: Custom MLflow tracking URI.
 
-## Configuration File
+Data settings:
 
-The YAML configuration file provides a convenient way to manage project settings. Generate a template with:
+- `--backend`, `-b`: Dataframe backend.
+- `--train-size`: Train/test split ratio.
+- `--stratify`: Enable stratified splitting.
+- `--no-stratify`: Disable stratified splitting.
+- `--strata`: Column or columns used for stratification.
+
+Project helpers:
+
+- `--dummy`: Write a dummy baseline helper.
+- `--tpot`: Write a TPOT helper.
+
+Problem settings:
+
+- `--problem-type`, `-p`: Problem type.
+
+The CLI currently accepts the backend names supported by the codebase, including `polars`, `pandas`, `modin`, `cudf`, `dask`, and `pyarrow`. The problem type choices are the ones exposed by Bukka itself.
+
+## Configuration file
+
+Use a YAML file when the command line gets too long or when you want to reuse the same setup.
+
+Generate a template:
 
 ```bash
 python -m bukka init-config
 ```
 
-**Example `bukka_config.yaml`:**
-```yaml
-# Bukka Project Configuration Template
+Example file:
 
-# Project settings
+```yaml
 project:
   name: my_ml_project
   dataset: data/train.csv
   target: target_column
   skip_venv: false
-  enable_mlflow: false  # Enable MLflow experiment tracking
-  mlflow_tracking_uri: null  # Optional: custom MLflow tracking URI
+  enable_mlflow: false
+  mlflow_tracking_uri: null
 
-# Data processing settings
 data:
   backend: polars
   train_size: 0.8
   stratify: true
   strata: null
 
-# Problem specification
 problem:
-  type: auto  # or: binary_classification, multiclass_classification, regression, clustering
+  type: auto
 ```
 
-**Using the config file:**
+Run with a config file:
+
 ```bash
 python -m bukka run --config bukka_config.yaml
 ```
 
-**Override config values with CLI arguments:**
+You can still override values on the command line:
+
 ```bash
-python -m bukka run --config bukka_config.yaml --backend pandas --problem-type regression
+python -m bukka run --config bukka_config.yaml --backend pandas --train-size 0.7
 ```
 
 ## Examples
 
-### 1. Quick Start - Create a project with inline arguments
+Create a project from a CSV file:
 
 ```bash
-python -m bukka run --name my_project --dataset data.csv --target price
+python -m bukka run --name titanic --dataset titanic.csv --target Survived
 ```
 
-### 2. Specify backend and problem type
+Use a different backend and problem type:
 
 ```bash
-python -m bukka run -n classification_proj -d iris.csv -t species \
-  --backend pandas --problem-type multiclass_classification
+python -m bukka run -n fraud_detection -d transactions.csv -t is_fraud \
+  --backend pandas --problem-type binary_classification
 ```
 
-### 3. Regression project with custom train/test split
+Create a project without the virtual environment:
 
 ```bash
-python -m bukka run -n regression_proj -d housing.csv -t price \
-  --problem-type regression --train-size 0.7
+python -m bukka run -n quick_start -d data.csv --skip-venv
 ```
 
-### 4. Clustering project (no target column)
+Add MLflow or helper files when you need them:
 
 ```bash
-python -m bukka run -n clustering_proj -d customers.csv \
-  --problem-type clustering --backend polars
-```
-
-### 5. Create project structure only (add dataset later)
-
-```bash
-python -m bukka run --name future_project --skip-venv
-```
-
-### 6. Use configuration file
-
-```bash
-# First, create a config template
-python -m bukka init-config --output my_config.yaml
-
-# Edit my_config.yaml with your settings
-
-# Run with the config
-python -m bukka run --config my_config.yaml
-```
-
-### 7. Stratified sampling with specific columns
-
-```bash
-python -m bukka run -n stratified_proj -d data.csv -t outcome \
-  --strata gender age_group --backend polars
-```
-
-### 8. Enable MLflow experiment tracking
-
-```bash
-python -m bukka run -n tracked_project -d data.csv -t target \
-  --mlflow --backend polars
-```
-
-MLflow will be configured automatically with:
-- Tracking URI: `file:///mlruns` in your project directory
-- Experiment name: `{project_name}_experiment`
-- MLflow setup file: `mlflow_setup.py` for easy configuration
-
-After project creation, view your experiments with:
-```bash
-cd tracked_project
-mlflow ui
-```
-
-## Input Validation
-
-The CLI includes comprehensive input validation:
-
-### ✅ Project Name Validation
-- Cannot be empty
-- Cannot contain invalid characters: `< > : " | ? *`
-
-```bash
-# ❌ Invalid
-python -m bukka run --name "my:project"
-# Error: Project name contains invalid characters
-
-# ✅ Valid
-python -m bukka run --name my_project
-```
-
-### ✅ Dataset Path Validation
-- File must exist
-- Path must point to a file (not a directory)
-
-```bash
-# ❌ Invalid
-python -m bukka run --name proj --dataset nonexistent.csv
-# Error: Dataset file not found: nonexistent.csv
-
-# ✅ Valid
-python -m bukka run --name proj --dataset ./data/train.csv
-```
-
-### ✅ Backend Validation
-- Must be a narwhals-supported backend
-
-```bash
-# ❌ Invalid
-python -m bukka run --name proj --backend invalid
-# Error: Backend 'invalid' not supported
-
-# ✅ Valid
-python -m bukka run --name proj --backend polars
-```
-
-### ✅ Problem Type Validation
-- Must be a recognized ML problem type
-
-```bash
-# ❌ Invalid
-python -m bukka run --name proj --problem-type unsupervised
-# Error: Problem type 'unsupervised' not recognized
-
-# ✅ Valid
-python -m bukka run --name proj --problem-type clustering
-```
-
-### ✅ Train Size Validation
-- Must be between 0 and 1
-
-```bash
-# ❌ Invalid
-python -m bukka run --name proj --train-size 1.5
-# Error: train_size must be between 0 and 1
-
-# ✅ Valid
-python -m bukka run --name proj --train-size 0.8
+python -m bukka run -n tracked_project -d data.csv -t target --mlflow
+python -m bukka run -n baseline_project -d data.csv -t target --dummy
+python -m bukka run -n tpot_project -d data.csv -t target --tpot
 ```
 
 ## Help
 
-Get help at any level:
+Get help from the CLI itself:
 
 ```bash
-# Main help
 python -m bukka --help
-
-# Subcommand help
 python -m bukka run --help
 python -m bukka init-config --help
 ```
 
-## Migration from Old CLI
+## Notes
 
-If you're upgrading from an older version of Bukka, here's how to migrate:
-
-**Old CLI:**
-```bash
-python -m bukka --name my_proj --dataset data.csv --target label
-```
-
-**New CLI (backward compatible, but deprecated):**
-```bash
-python -m bukka run --name my_proj --dataset data.csv --target label
-```
-
-**New CLI (recommended with new features):**
-```bash
-python -m bukka run --name my_proj --dataset data.csv --target label \
-  --backend polars --problem-type auto
-```
-
-## Troubleshooting
-
-### ModuleNotFoundError: No module named 'yaml'
-
-Install PyYAML:
-```bash
-pip install pyyaml
-```
-
-### Validation errors
-
-Read the error messages carefully - they tell you exactly what's wrong:
-```
-✗ Dataset file not found: data.csv
-✗ Backend 'numpy' not supported. Supported backends: polars, pandas, modin, cudf, dask, pyarrow
-```
-
-### Config file not loading
-
-Make sure your YAML is valid:
-```bash
-python -c "import yaml; yaml.safe_load(open('bukka_config.yaml'))"
-```
-
-## Contributing
-
-Found a bug or want to request a feature? Visit: https://github.com/pjachim/Bukka/issues
+- `run` is the main command for day-to-day use.
+- `init-config` is there for people who prefer YAML over long command lines.
+- The deeper module-level API is documented in the Sphinx docs and is mainly for advanced users.

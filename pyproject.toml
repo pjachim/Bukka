@@ -1,6 +1,6 @@
 [project]
 name = "bukka"
-version = "0.0.6"
+version = "1.0.0"
 authors = [
   { name="Peter Jachim", email="pjachim@outlook.com" },
 ]
@@ -35,3 +35,12 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0"
+]
+
+polars = [
+  "polars>=1.0"
+]

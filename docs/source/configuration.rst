@@ -1,12 +1,12 @@
 Configuration
 =============
 
-Bukka supports flexible configuration through YAML files and command-line arguments.
+Bukka supports YAML configuration when the command line starts to get unwieldy.
 
 Configuration File Format
 --------------------------
 
-Bukka uses YAML configuration files for complex project setups. Generate a template with:
+Bukka uses YAML configuration files for project setup. Generate a template with:
 
 .. code-block:: bash
 
@@ -15,7 +15,7 @@ Bukka uses YAML configuration files for complex project setups. Generate a templ
 Default Configuration
 ^^^^^^^^^^^^^^^^^^^^^
 
-Here's the default configuration template:
+The default template looks like this:
 
 .. code-block:: yaml
 
@@ -44,10 +44,10 @@ Here's the default configuration template:
 Configuration Sections
 ----------------------
 
-Project Section
+Project section
 ^^^^^^^^^^^^^^^
 
-The ``project`` section contains core project settings:
+The ``project`` section holds the basic project fields:
 
 .. list-table::
    :header-rows: 1
@@ -59,27 +59,27 @@ The ``project`` section contains core project settings:
      - Default
    * - ``name``
      - string
-     - Project name and directory
+     - Project name and directory.
      - Required
    * - ``dataset``
      - string
-     - Path to dataset file
+     - Path to the dataset file.
      - Optional
    * - ``target``
      - string
-     - Target column name
+     - Target column name.
      - Optional
    * - ``skip_venv``
      - boolean
-     - Skip virtual environment creation
+     - Skip virtual environment creation.
      - ``false``
    * - ``enable_mlflow``
      - boolean
-     - Enable MLflow tracking
+     - Enable MLflow tracking.
      - ``false``
    * - ``mlflow_tracking_uri``
      - string
-     - Custom MLflow tracking URI
+     - Custom MLflow tracking URI.
      - ``null``
 
 Example:
@@ -93,10 +93,10 @@ Example:
      skip_venv: false
      enable_mlflow: true
 
-Data Section
+Data section
 ^^^^^^^^^^^^
 
-The ``data`` section controls data processing:
+The ``data`` section controls dataset handling:
 
 .. list-table::
    :header-rows: 1
@@ -108,19 +108,19 @@ The ``data`` section controls data processing:
      - Default
    * - ``backend``
      - string
-     - Dataframe backend (polars, pandas, etc.)
+     - Dataframe backend.
      - ``polars``
    * - ``train_size``
      - float
-     - Train/test split ratio (0.0-1.0)
+     - Train/test split ratio.
      - ``0.8``
    * - ``stratify``
      - boolean
-     - Enable stratified sampling
+     - Enable stratified sampling.
      - ``true``
    * - ``strata``
      - list
-     - Columns for stratification
+     - Columns for stratification.
      - ``null``
 
 Example:
@@ -133,10 +133,10 @@ Example:
      stratify: true
      strata: [gender, age_group]
 
-Problem Section
+Problem section
 ^^^^^^^^^^^^^^^
 
-The ``problem`` section specifies the ML problem type:
+The ``problem`` section tells Bukka how to treat the project:
 
 .. list-table::
    :header-rows: 1
@@ -148,7 +148,7 @@ The ``problem`` section specifies the ML problem type:
      - Default
    * - ``type``
      - string
-     - ML problem type
+     - ML problem type.
      - ``auto``
 
 Valid problem types:
@@ -166,15 +166,15 @@ Example:
    problem:
      type: binary_classification
 
-Command-Line Arguments
+Command-line arguments
 ----------------------
 
-All configuration options can be specified via command-line arguments.
+Every configuration option can also be passed on the command line.
 
-Priority Order
+Priority order
 ^^^^^^^^^^^^^^
 
-When both config file and CLI arguments are provided:
+When both a config file and CLI arguments are provided:
 
 1. **Command-line arguments** (highest priority)
 2. **Configuration file**
@@ -187,7 +187,7 @@ Example:
    # Config file sets backend to 'polars', CLI overrides to 'pandas'
    python -m bukka run --config config.yaml --backend pandas
 
-Global Options
+Global options
 ^^^^^^^^^^^^^^
 
 .. code-block:: bash
@@ -198,7 +198,7 @@ Options:
 
 * ``--help`` - Show help message
 
-Init-Config Command
+Init-config command
 ^^^^^^^^^^^^^^^^^^^
 
 Generate a configuration template:
@@ -211,7 +211,7 @@ Options:
 
 * ``-o, --output FILE`` - Output path (default: ``bukka_config.yaml``)
 
-Run Command
+Run command
 ^^^^^^^^^^^
 
 Create a Bukka project:
@@ -224,7 +224,7 @@ Create a Bukka project:
 
 * ``-c, --config FILE`` - Path to YAML configuration file
 
-**Project Settings:**
+**Project settings:**
 
 * ``-n, --name NAME`` - Project name (required unless using --config)
 * ``-d, --dataset FILE`` - Dataset file path
@@ -233,7 +233,7 @@ Create a Bukka project:
 * ``--mlflow`` - Enable MLflow tracking
 * ``--mlflow-tracking-uri URI`` - MLflow tracking URI
 
-**Data Processing:**
+**Data processing:**
 
 * ``-b, --backend NAME`` - Dataframe backend (default: polars)
 * ``--train-size RATIO`` - Train/test split ratio (default: 0.8)
@@ -241,11 +241,11 @@ Create a Bukka project:
 * ``--no-stratify`` - Disable stratified split
 * ``--strata COLUMNS`` - Stratification columns
 
-**Problem Specification:**
+**Problem specification:**
 
 * ``-p, --problem-type TYPE`` - ML problem type (default: auto)
 
-Configuration Examples
+Configuration examples
 ----------------------
 
 Example 1: Basic Classification
@@ -257,6 +257,8 @@ Example 1: Basic Classification
      name: iris_classifier
      dataset: iris.csv
      target: species
+
+The rest of the old examples have been left out on purpose. The CLI pages are the primary reference for day-to-day use, and the API details are in :doc:`api_reference`.
    
    data:
      backend: polars

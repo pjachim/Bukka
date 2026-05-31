@@ -1,6 +1,0 @@
-scikit-learn
-seaborn
-numpy
-ipykernel
-narwhals
-pyarrow

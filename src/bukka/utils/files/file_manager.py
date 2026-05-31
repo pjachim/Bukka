@@ -134,6 +134,10 @@ class FileManager:
         # MLflow paths
         self.mlruns_path: Path = self.project_path / 'mlruns'
 
+        # Generated Pipeline paths
+        self.tpot_pipe_path = self.generated_pipes / 'tpot_pipe.py'
+        self.dummy_pipe_path = self.generated_pipes / 'dummy_pipe.py'
+
     def _make_path(self, path: Path) -> None:
         """
         Creates a directory if it doesn't already exist.

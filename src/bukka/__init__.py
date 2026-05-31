@@ -1,7 +1,7 @@
 import argparse
 from bukka.project import Project
 from bukka.data_management.dataset import Dataset
-from bukka.expert_system.problem_identifier import ProblemIdentifier
+#from bukka.expert_system.problem_identifier import ProblemIdentifier
 from bukka.utils import bukka_logger
 
 logger = bukka_logger.BukkaLogger(__name__)
@@ -24,9 +24,9 @@ def main(name, dataset, target):
         proj.file_manager.dataset_path
     )
 
-    problem_identifier = ProblemIdentifier(dataset)
-    problem_identifier.multivariate_problems()
-    problem_identifier.univariate_problems()
+    #problem_identifier = ProblemIdentifier(dataset)
+    #problem_identifier.multivariate_problems()
+    #problem_identifier.univariate_problems()
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

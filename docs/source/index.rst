@@ -1,12 +1,10 @@
 .. Bukka documentation master file
 
-Welcome to Bukka's Documentation!
-===================================
+Bukka documentation
+===================
 
-**Bukka** is a Django-inspired Python CLI tool that dramatically reduces the boilerplate 
-and setup time for new Machine Learning (ML) projects. Just like Django's ``startproject`` 
-command, Bukka lets you instantly scaffold a robust, standardized, and ready-to-use project 
-infrastructure.
+Bukka is a CLI for creating a machine learning project scaffold from a dataset or a config file.
+It handles the repetitive setup work so you can start with code that is already organized.
 
 .. toctree::
    :maxdepth: 2
@@ -14,48 +12,35 @@ infrastructure.
 
    getting_started
    usage_examples
-   api_reference
    configuration
+   api_reference
 
-Features
---------
-
-✨ **Django-Inspired Structure**: Creates a logical, maintainable folder hierarchy optimized for ML workflows.
-
-🚀 **Automated Environment Setup**: Automatically generates a Python virtual environment.
-
-📦 **Dependency Management**: Creates a starting requirements.txt file with essential ML packages.
-
-⚙️ **YAML Configuration**: Use configuration files for complex project setups.
-
-🔍 **Problem Type Detection**: Automatic ML problem identification or explicit specification.
-
-🤖 **Intelligent Pipeline Generation**: Automatically generates ML pipelines based on dataset analysis.
-
-Quick Start
+Quick start
 -----------
 
-Install Bukka via pip:
+Install Bukka:
 
 .. code-block:: bash
 
    pip install bukka
 
-Create a new ML project:
+Create a new project:
 
 .. code-block:: bash
 
    python -m bukka run --name titanic --dataset titanic.csv --target Survived
 
-This command will:
+What the command does:
 
-1. Create the project folder
-2. Set up a virtual environment
-3. Generate initial dependency files
-4. Install packages
-5. Copy and split your dataset
-6. Analyze your data and generate pipelines
-7. Provide starter notebooks
+1. Creates the project folder.
+2. Sets up a virtual environment unless you pass ``--skip-venv``.
+3. Writes the initial configuration and dependency files.
+4. Copies the dataset into the new project.
+5. Splits the dataset into train and test sets.
+6. Writes starter files such as the data reader and notebook.
+7. Adds optional helpers when you pass flags like ``--mlflow``, ``--dummy``, or ``--tpot``.
+
+For the command reference and the config file format, see the other pages in this guide.
 
 Indices and tables
 ==================

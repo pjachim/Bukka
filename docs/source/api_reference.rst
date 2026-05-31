@@ -1,12 +1,14 @@
 API Reference
 =============
 
-This section provides detailed API documentation for Bukka's core modules and classes.
+This section is for advanced users who want to extend Bukka or inspect the code behind the CLI.
 
-Core Modules
+Most users should stay on the CLI pages. The modules below are the implementation details.
+
+Core modules
 ------------
 
-Project Module
+Project module
 ^^^^^^^^^^^^^^
 
 .. automodule:: bukka.project
@@ -14,7 +16,7 @@ Project Module
    :undoc-members:
    :show-inheritance:
 
-Data Management
+Data management
 ---------------
 
 Dataset Module
@@ -25,10 +27,10 @@ Dataset Module
    :undoc-members:
    :show-inheritance:
 
-Coding Utilities
+Coding utilities
 ----------------
 
-Configuration Writer
+Configuration writer
 ^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: bukka.coding.write_config
@@ -36,7 +38,7 @@ Configuration Writer
    :undoc-members:
    :show-inheritance:
 
-Starter Notebook Writer
+Starter notebook writer
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: bukka.coding.write_starter_notebook
@@ -44,7 +46,7 @@ Starter Notebook Writer
    :undoc-members:
    :show-inheritance:
 
-Pipeline Writer
+Pipeline writer
 ^^^^^^^^^^^^^^^
 
 .. automodule:: bukka.coding.write_pipeline
@@ -52,7 +54,7 @@ Pipeline Writer
    :undoc-members:
    :show-inheritance:
 
-PyProject TOML Writer
+PyProject TOML writer
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: bukka.coding.write_pyproject_toml
@@ -60,7 +62,7 @@ PyProject TOML Writer
    :undoc-members:
    :show-inheritance:
 
-Data Reader Writer
+Data reader writer
 ^^^^^^^^^^^^^^^^^^
 
 .. automodule:: bukka.coding.write_data_reader_class
@@ -68,7 +70,7 @@ Data Reader Writer
    :undoc-members:
    :show-inheritance:
 
-MLflow Setup
+MLflow setup
 ^^^^^^^^^^^^
 
 .. automodule:: bukka.coding.write_mlflow_setup
@@ -76,7 +78,7 @@ MLflow Setup
    :undoc-members:
    :show-inheritance:
 
-Jupyter Utilities
+Jupyter utilities
 ^^^^^^^^^^^^^^^^^
 
 .. automodule:: bukka.coding.utils.jupyter_handler
@@ -84,7 +86,7 @@ Jupyter Utilities
    :undoc-members:
    :show-inheritance:
 
-Template Handler
+Template handler
 ^^^^^^^^^^^^^^^^
 
 .. automodule:: bukka.coding.utils.template_handler
@@ -111,7 +113,7 @@ Reference
    :undoc-members:
    :show-inheritance:
 
-File Manager
+File manager
 ^^^^^^^^^^^^
 
 .. automodule:: bukka.utils.files.file_manager
@@ -119,10 +121,10 @@ File Manager
    :undoc-members:
    :show-inheritance:
 
-Environment Management
+Environment management
 ----------------------
 
-Environment Module
+Environment module
 ^^^^^^^^^^^^^^^^^^
 
 .. automodule:: bukka.environment.environment
@@ -133,7 +135,7 @@ Environment Module
 Preprocessing
 -------------
 
-Categorical Processing
+Categorical processing
 ^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: bukka.preprocessing.categorical
