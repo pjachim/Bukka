@@ -38,3 +38,6 @@ class TPOTWriter:
         """Writes the TPOT model class to the specified output path."""
         content = PIPELINE_TEMPLATE.format(tpot_model=TPOT_MAPPING[self.model_type])
         write_path = self.file_manager.generated_pipes / 'tpot_pipe.py'
+
+        with open(write_path, 'w') as f:
+            f.write(content)
