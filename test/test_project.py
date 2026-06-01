@@ -282,87 +282,6 @@ class TestProjectRun:
         # Verify environment was set up (since skip_venv=False by default)
         mock_env_instance.build_environment.assert_called_once()
 
-    @patch('bukka.project.StarterNotebookWriter')
-    @patch('bukka.project.ConfigWriter')
-    @patch('bukka.project.DataReaderWriter')
-    @patch('bukka.project.PipelineWriter')
-    @patch('bukka.project.PipelineBuilder')
-    @patch('bukka.project.Dataset')
-    @patch('bukka.project.EnvironmentBuilder')
-    @patch('bukka.project.FileManager')
-    def test_run_with_dataset_generates_pipeline(
-        self, mock_file_manager_class, mock_env_builder_class,
-        mock_dataset_class, mock_pipeline_builder_class, mock_pipeline_writer_class,
-        mock_data_reader_writer_class, mock_config_writer_class, mock_notebook_writer_class
-    ):
-        """Test that run() generates pipeline when dataset is provided.
-        
-        Examples
-        --------
-        >>> from unittest.mock import patch, MagicMock
-        >>> # Multiple patches required for complete test
-        >>> proj = Project(name="test", dataset_path="data.csv", target_column="target")
-        >>> proj.run()
-        >>> # Pipeline, config, and notebook should be generated
-        """
-        # Setup mocks
-        mock_fm_instance = MagicMock()
-        mock_fm_instance.generated_pipes = Path("/tmp/pipelines")
-        mock_fm_instance.config_path = Path("/tmp/config.py")
-        mock_file_manager_class.return_value = mock_fm_instance
-        
-        mock_env_instance = MagicMock()
-        mock_env_builder_class.return_value = mock_env_instance
-        
-        mock_dataset_instance = MagicMock()
-        mock_dataset_class.return_value = mock_dataset_instance
-        
-        mock_builder_instance = MagicMock()
-        mock_builder_instance.build_pipeline.return_value = []
-        mock_pipeline_builder_class.return_value = mock_builder_instance
-        
-        mock_writer_instance = MagicMock()
-        mock_pipeline_writer_class.return_value = mock_writer_instance
-        
-        mock_data_reader_instance = MagicMock()
-        mock_data_reader_writer_class.return_value = mock_data_reader_instance
-        
-        mock_config_instance = MagicMock()
-        mock_config_writer_class.return_value = mock_config_instance
-        
-        mock_notebook_instance = MagicMock()
-        mock_notebook_writer_class.return_value = mock_notebook_instance
-        
-        # Create and run project
-        proj = Project(
-            name="test_project",
-            dataset_path="data.csv",
-            target_column="target"
-        )
-        proj.run()
-        
-        # Verify skeleton was built
-        mock_fm_instance.build_skeleton.assert_called_once()
-        
-        # Verify environment was set up
-        mock_env_instance.build_environment.assert_called_once()
-        
-        # Verify dataset was created
-        mock_dataset_class.assert_called_once()
-        
-        # Verify pipeline was built and written
-        mock_builder_instance.build_pipeline.assert_called_once()
-        mock_writer_instance.write_code.assert_called_once()
-        
-        # Verify data reader was written
-        mock_data_reader_instance.write_code.assert_called_once()
-        
-        # Verify config was written
-        mock_config_instance.write_config.assert_called_once()
-        
-        # Verify notebook was written
-        mock_notebook_instance.write_notebook.assert_called_once()
-
     @patch('bukka.project.FileManager')
     def test_run_with_skip_venv_skips_environment_setup(self, mock_file_manager_class):
         """Test that run() skips environment setup when skip_venv=True.
@@ -434,7 +353,6 @@ class TestProjectMLflowIntegration:
     @patch('bukka.project.ConfigWriter')
     @patch('bukka.project.StarterNotebookWriter')
     @patch('bukka.project.DataReaderWriter')
-    @patch('bukka.project.PipelineWriter')
     @patch('bukka.project.Dataset')
     @patch('bukka.project.EnvironmentBuilder')
     @patch('bukka.project.PyprojectTomlWriter')
@@ -445,7 +363,6 @@ class TestProjectMLflowIntegration:
         mock_toml_class,
         mock_env_class,
         mock_dataset_class,
-        mock_pipeline_class,
         mock_data_reader_class,
         mock_notebook_class,
         mock_config_class
@@ -484,7 +401,6 @@ class TestProjectMLflowIntegration:
     @patch('bukka.project.ConfigWriter')
     @patch('bukka.project.StarterNotebookWriter')
     @patch('bukka.project.DataReaderWriter')
-    @patch('bukka.project.PipelineWriter')
     @patch('bukka.project.Dataset')
     @patch('bukka.project.EnvironmentBuilder')
     @patch('bukka.project.PyprojectTomlWriter')
@@ -495,7 +411,6 @@ class TestProjectMLflowIntegration:
         mock_toml_class,
         mock_env_class,
         mock_dataset_class,
-        mock_pipeline_class,
         mock_data_reader_class,
         mock_notebook_class,
         mock_config_class

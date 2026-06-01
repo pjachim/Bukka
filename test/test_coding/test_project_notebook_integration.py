@@ -13,6 +13,9 @@ from unittest.mock import patch
 from bukka.project import Project
 
 
+pytestmark = pytest.mark.venv
+
+
 class TestProjectNotebookIntegration:
     """Integration tests for Project notebook generation with venv."""
 

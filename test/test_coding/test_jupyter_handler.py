@@ -9,6 +9,9 @@ import pytest
 from bukka.coding.utils.jupyter_handler import JupyterWriter
 
 
+pytestmark = pytest.mark.venv
+
+
 class TestJupyterWriter:
     """Tests for JupyterWriter class."""
 
