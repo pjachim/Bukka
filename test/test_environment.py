@@ -7,6 +7,9 @@ from unittest.mock import patch, MagicMock, call
 from bukka.environment.environment import EnvironmentBuilder
 
 
+pytestmark = pytest.mark.venv
+
+
 class TestEnvironmentBuilderInitialization:
     """Test suite for EnvironmentBuilder initialization."""
 

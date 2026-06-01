@@ -36,6 +36,11 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.pytest.ini_options]
+markers = [
+  "venv: tests that validate virtual-environment behavior; run explicitly",
+]
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0"
