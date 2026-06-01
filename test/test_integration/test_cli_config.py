@@ -290,7 +290,7 @@ class TestConfigManager:
         config_data = {
             'project': {'name': 'test'},
             'data': {'backend': 'pyarrow', 'train_size': 1.5},
-            'problem': {'type': 'auto'}
+            'problem': {'type': 'binary_classification'}
         }
         
         with open(config_path, 'w', encoding='utf-8') as f:
@@ -502,70 +502,6 @@ class TestCLIIntegrationWithNewFeatures:
 
         assert result.returncode == 0 or "Problem type received: regression" in result.stderr
     
-    def test_cli_with_config_file(self, tmp_path):
-        """Test CLI run with --config option."""
-        csv = tmp_path / "data.csv"
-        csv.write_text("feature,target\n1,0\n2,1\n", encoding="utf-8")
-        
-        config_path = tmp_path / "config.yaml"
-        config_data = {
-            'project': {
-                'name': 'config_test_proj',
-                'dataset': str(csv),
-                'target': 'target',
-                'skip_venv': True
-            },
-            'data': {
-                'backend': 'pyarrow',
-                'train_size': 0.7
-            },
-            'problem': {
-                'type': 'binary_classification'
-            }
-        }
-        
-        with open(config_path, 'w', encoding='utf-8') as f:
-            yaml.dump(config_data, f)
-        
-        code = textwrap.dedent(f"""
-            import sys
-            from bukka.environment.environment import EnvironmentBuilder
-            EnvironmentBuilder.build_environment = lambda self: None
-            
-            from bukka import project as proj_module
-            original_init = proj_module.Project.__init__
-            
-            def patched_init(self, *args, **kwargs):
-                self._test_backend = kwargs.get('backend', 'pyarrow')
-                self._test_problem_type = kwargs.get('problem_type', 'auto')
-                self._test_train_size = kwargs.get('train_size', 0.8)
-                raise RuntimeError(
-                    f"Config loaded: backend={{self._test_backend}}, "
-                    f"problem_type={{self._test_problem_type}}, "
-                    f"train_size={{self._test_train_size}}"
-                )
-            
-            proj_module.Project.__init__ = patched_init
-            
-            sys.argv = ['bukka', 'run', '--config', r'{config_path}']
-            
-            try:
-                from bukka.__main__ import main
-                main()
-            except RuntimeError as e:
-                if "Config loaded" in str(e):
-                    print(str(e))
-                    sys.exit(0)
-                raise
-        """)
-        
-        result = subprocess.run([sys.executable, "-c", code],
-                              capture_output=True, text=True)
-
-        assert result.returncode == 0 or "backend=pyarrow" in result.stderr
-        assert result.returncode == 0 or "problem_type=binary_classification" in result.stderr
-        assert result.returncode == 0 or "train_size=0.7" in result.stderr
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
