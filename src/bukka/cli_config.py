@@ -80,6 +80,8 @@ class BukkaConfig:
     target: str | None = None
     skip_venv: bool = False
     enable_mlflow: bool = False
+    use_df_profiling: bool = False
+    use_pygwalker: bool = False
     mlflow_tracking_uri: str | None = None
     
     # Data settings
@@ -144,6 +146,8 @@ class BukkaConfig:
             target=get_value('target', ('project', 'target')),
             skip_venv=get_value('skip_venv', ('project', 'skip_venv'), False),
             enable_mlflow=get_value('enable_mlflow', ('project', 'enable_mlflow'), False),
+            use_df_profiling=get_value('use_df_profiling', ('project', 'use_df_profiling'), False),
+            use_pygwalker=get_value('use_pygwalker', ('project', 'use_pygwalker'), False),
             mlflow_tracking_uri=get_value('mlflow_tracking_uri', ('project', 'mlflow_tracking_uri')),
             backend=get_value('backend', ('data', 'backend'), 'pyarrow'),
             train_size=get_value('train_size', ('data', 'train_size'), 0.8),
