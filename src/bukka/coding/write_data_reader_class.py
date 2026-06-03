@@ -22,13 +22,15 @@ class DataReader:
         self.test_filepath = test_filepath
         self.dataframe_backend = DATAFRAME_BACKEND
 
-    def read_train_data(self) -> FrameT:
+    def read_train_data(self, return_pandas: bool = False) -> FrameT:
         """Reads the training data from the training Parquet file."""
-        return self._read_file(self.train_filepath)
+        df = self._read_file(self.train_filepath)
+        return df.to_pandas() if return_pandas else df.to_native()
 
-    def read_test_data(self) -> FrameT:
+    def read_test_data(self, return_pandas: bool = False) -> FrameT:
         """Reads the testing data from the testing Parquet file."""
-        return self._read_file(self.test_filepath)
+        df = self._read_file(self.test_filepath)
+        return df.to_pandas() if return_pandas else df.to_native()
 
     def _read_file(self, filepath: str) -> FrameT:
         """Reads a Parquet file and returns a Narwhals DataFrame."""
@@ -38,19 +40,25 @@ class DataReader:
 
 # These methods are added only if a target column is specified (no need for X/y split for unsupervised tasks)
 ADDITIONAL_SUPERVISED_METHODS = '''
-    def readXy_train(self, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
+    def readXy_train(self, target_column: str | None = {target_column}, return_pandas: bool = False) -> tuple[FrameT, FrameT]:
         """Reads the training data and splits it into features and target."""
-        return self._readXy(self.train_filepath, is_train=True, target_column=target_column)
+        return self._readXy(self.train_filepath, is_train=True, target_column=target_column, return_pandas=return_pandas)
 
-    def readXy_test(self, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
+    def readXy_test(self, target_column: str | None = {target_column}, return_pandas: bool = False) -> tuple[FrameT, FrameT]:
         """Reads the testing data and splits it into features and target."""
-        return self._readXy(self.test_filepath, is_train=False, target_column=target_column)
+        return self._readXy(self.test_filepath, is_train=False, target_column=target_column, return_pandas=return_pandas)
 
-    def _readXy(self, filepath: str, is_train: bool, target_column: str | None = {target_column}) -> tuple[FrameT, FrameT]:
+    def _readXy(self, filepath: str, is_train: bool, target_column: str | None = {target_column}, return_pandas: bool = False) -> tuple[FrameT, FrameT]:
         """Reads a Parquet file and splits it into features and target."""
         df = self._read_file(filepath)
         X = df.drop([target_column])
-        y = df.select(nw.col(target_column))
+        y = df.select([target_column])
+        if return_pandas:
+            X = X.to_pandas()
+            y = y.to_pandas()
+        else:
+            X = X.to_native()
+            y = y.to_native()
         return X, y
 '''
 
