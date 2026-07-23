@@ -12,6 +12,7 @@ from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
 from bukka.coding.write_config import ConfigWriter
 from bukka.coding.write_tpot import TPOTWriter
 from bukka.coding.write_dummy import DummyWriter
+from bukka.coding.write_eda_notebook import EDANotebookWriter
 from bukka.utils.bukka_logger import BukkaLogger
 
 logger = BukkaLogger(__name__)
@@ -74,6 +75,8 @@ class Project:
             target_column: str | None = None,
             skip_venv: bool = False,
             enable_mlflow: bool = False,
+            use_df_profiling: bool = False,
+            use_pygwalker: bool = False,
             mlflow_tracking_uri: str | None = None,
             backend: str = "polars",
             problem_type: str = "auto",
@@ -106,7 +109,8 @@ class Project:
         logger.debug(f"Backend: {backend}")
         logger.debug(f"Problem type: {problem_type}")
         logger.debug(f"MLflow enabled: {enable_mlflow}")
-        
+        logger.debug(f"DataFrame profiling enabled: {use_df_profiling}")
+        logger.debug(f"Pygwalker enabled: {use_pygwalker}")
         self.name: str = name
         self.dataset_path: str | None = dataset_path
         self.file_manager: FileManager | None = None
@@ -122,6 +126,8 @@ class Project:
         self.strata: list[str] | None = strata
         self.dummy: bool = dummy
         self.tpot: bool = tpot
+        self.use_df_profiling: bool = use_df_profiling
+        self.use_pygwalker: bool = use_pygwalker
         logger.debug("Project instance created")
 
     def run(self) -> None:
@@ -160,6 +166,16 @@ class Project:
                 logger.info("MLflow enabled, generating MLflow setup")
                 self._write_mlflow_setup()
                 self._write_mlflow_notebook()
+
+            if self.use_df_profiling or self.use_pygwalker:
+                logger.info("Data exploration tools enabled, generating EDA notebook")
+                eda_writer = EDANotebookWriter(
+                    output_path=str(self.file_manager.eda_notebook_path),
+                    venv_path=None if self.skip_venv else self.file_manager.virtual_env,
+                    use_df_profiling=self.use_df_profiling,
+                    use_pygwalker=self.use_pygwalker
+                )
+                eda_writer.write_notebook()
             
             self._write_starter_notebook()
         else:
@@ -268,7 +284,7 @@ class Project:
         logger.debug("FileManager initialized")
         
         logger.info("Building project file skeleton")
-        self.file_manager.build_skeleton()
+        self.file_manager.build_skeleton(create_virtual_env=not self.skip_venv)
         logger.info("Project skeleton built successfully")
 
     def _setup_environment(self) -> None:

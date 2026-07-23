@@ -217,6 +217,8 @@ class BukkaConfig:
             'strata': self.strata,
             'dummy': self.dummy,
             'tpot': self.tpot,
+            'use_df_profiling': self.use_df_profiling,
+            'use_pygwalker': self.use_pygwalker,
         }
 
 

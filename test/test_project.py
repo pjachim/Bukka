@@ -306,6 +306,20 @@ class TestProjectRun:
         # Verify environ_manager was never created
         assert proj.environ_manager is None
 
+    def test_run_with_skip_venv_does_not_create_virtualenv_directory(self, tmp_path):
+        """Test that run() does not create .venv when skip_venv=True.
+
+        This guards the CLI --skip-venv behavior so project scaffolding does not
+        leave behind a virtualenv directory when environment setup is skipped.
+        """
+        project_path = tmp_path / "skip_venv_project"
+        proj = Project(name=str(project_path), skip_venv=True)
+
+        proj.run()
+
+        assert proj.file_manager is not None
+        assert not proj.file_manager.virtual_env.exists()
+
 class TestProjectMLflowIntegration:
     """Test suite for Project MLflow integration."""
     

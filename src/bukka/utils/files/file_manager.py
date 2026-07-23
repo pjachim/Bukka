@@ -125,6 +125,7 @@ class FileManager:
         # Paths for standard files (these will not be created by build_skeleton
         # but are tracked for consistency/future methods)
         self.starter_notebook_path: Path = self.project_path / 'starter.ipynb'
+        self.eda_notebook_path: Path = self.project_path / 'eda_notebook.ipynb'
         self.mlflow_notebook_path: Path = self.project_path / 'mlflow_notebook.ipynb'
         self.requirements_path: Path = self.project_path / 'requirements.txt'
         self.readme_path: Path = self.project_path / 'README.md'
@@ -153,7 +154,7 @@ class FileManager:
 
     # --- Public Interface Methods ---
 
-    def build_skeleton(self) -> None:
+    def build_skeleton(self, create_virtual_env: bool = True) -> None:
         """
         Creates the defined project directory structure and copies the dataset.
 
@@ -184,7 +185,8 @@ class FileManager:
         (self.candidate_pipes / '__init__.py').touch()
 
         # --- 3. Create Other Directories (Virtual Env and Utils) ---
-        self._make_path(self.virtual_env)
+        if create_virtual_env:
+            self._make_path(self.virtual_env)
 
         self._make_path(self.utils)
         # Create __init__.py to make 'utils' a package
