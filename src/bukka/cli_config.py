@@ -22,6 +22,7 @@ SUPPORTED_BACKENDS = [
 
 # Problem types
 PROBLEM_TYPES = [
+    "auto",  # Let Bukka infer/route defaults for generic flows
     "binary_classification",
     "multiclass_classification", 
     "regression",
@@ -188,6 +189,27 @@ class BukkaConfig:
                     validator(value)
                 except exceptions as e:
                     errors.append(str(e))
+
+        supported_model_problem_types = {
+            "binary_classification",
+            "multiclass_classification",
+            "regression",
+        }
+
+        # Dummy/TPOT templates only support supervised classifier/regressor families.
+        if self.dummy and self.problem_type not in supported_model_problem_types:
+            errors.append(
+                "Dummy pipeline requires --problem-type to be one of: "
+                f"{', '.join(sorted(supported_model_problem_types))}. "
+                f"Got '{self.problem_type}'."
+            )
+
+        if self.tpot and self.problem_type not in supported_model_problem_types:
+            errors.append(
+                "TPOT pipeline requires --problem-type to be one of: "
+                f"{', '.join(sorted(supported_model_problem_types))}. "
+                f"Got '{self.problem_type}'."
+            )
         
         return errors
     

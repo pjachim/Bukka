@@ -29,9 +29,21 @@ class DummyWriter:
         self.file_manager = file_manager
         self.model_type = model_type
 
+    def _resolve_dummy_model(self) -> str:
+        """Resolve a sklearn dummy model class for the requested problem type."""
+        if self.model_type not in DUMMY_MAPPING:
+            supported_types = ', '.join(sorted(DUMMY_MAPPING))
+            raise ValueError(
+                "Dummy pipeline generation requires a supervised problem type. "
+                f"Supported problem types: {supported_types}. "
+                f"Got '{self.model_type}'."
+            )
+
+        return DUMMY_MAPPING[self.model_type]
+
     def write_dummy_class(self) -> None:
         """Writes the dummy model class to the specified output path."""
-        content = PIPELINE_TEMPLATE.format(dummy_model=DUMMY_MAPPING[self.model_type])
+        content = PIPELINE_TEMPLATE.format(dummy_model=self._resolve_dummy_model())
         
         with open(self.file_manager.dummy_pipe_path, 'w') as f:
             f.write(content)
