@@ -64,7 +64,6 @@ class MLflowNotebookWriter:
                         "**What you'll learn:**\n"
                         "- Setting up MLflow tracking\n"
                         "- Logging parameters, metrics, and artifacts\n"
-                        "- Comparing experiments\n"
                         "- Accessing the MLflow UI",
             cell_type="markdown"
         )
@@ -72,20 +71,17 @@ class MLflowNotebookWriter:
         notebook_writer.add_cell(
             cell_content="# Import required libraries\n"
                         "import mlflow\n"
-                        "from pathlib import Path\n"
-                        "import numpy as np\n"
                         "from sklearn.datasets import load_iris\n"
                         "from sklearn.model_selection import train_test_split\n"
                         "from sklearn.ensemble import RandomForestClassifier\n"
                         "from sklearn.metrics import accuracy_score, confusion_matrix\n"
-                        "import matplotlib.pyplot as plt",
             cell_type="code"
         )
 
     def _add_setup_section(self, notebook_writer) -> None:
         """Add MLflow setup section."""
         notebook_writer.add_cell(
-            cell_content="## 1. Setting Up MLflow\n\n"
+            cell_content="## Set Up MLflow\n\n"
                         "Before tracking experiments, you need to initialize MLflow using the `setup_mlflow()` "
                         "function from the `scripts/mlflow_setup.py` file.\n\n"
                         "The MLflow configuration is stored in your `config.py` file with:\n"
@@ -102,19 +98,19 @@ class MLflowNotebookWriter:
                         "print(\"MLflow is now initialized!\")",
             cell_type="code"
         )
-
+    
         notebook_writer.add_cell(
             cell_content="# View the current experiment configuration\n"
-                        "print(f\"Tracking URI: {mlflow.get_tracking_uri()}\")\n"
-                        "print(f\"Experiment Name: {mlflow.get_experiment_by_name(mlflow.get_tracking_uri()).name}\")",
+                        "print(f\"Tracking URI: {mlflow_client.get_tracking_uri()}\")\n"
+                        "print(f\"Experiment Name: {mlflow_client.get_experiment(mlflow_client.get_experiment_by_name(mlflow_client.get_experiment(mlflow_client.get_experiment_by_name(mlflow.get_tracking_uri()).experiment_id).name)).name}\")",
             cell_type="code"
         )
 
     def _add_basic_tracking_section(self, notebook_writer) -> None:
         """Add basic experiment tracking section."""
         notebook_writer.add_cell(
-            cell_content="## 2. Basic Experiment Tracking\n\n"
-                        "Track your first experiment! Use `mlflow.start_run()` to create a new run, "
+            cell_content="## Experiment Tracking\n\n"
+                        "Track your first experiment! Use `mlflow_client.start_run()` to create a new run, "
                         "then log parameters, metrics, and models.",
             cell_type="markdown"
         )
@@ -133,12 +129,12 @@ class MLflowNotebookWriter:
 
         notebook_writer.add_cell(
             cell_content="# Example 1: Basic run with parameters and metrics\n"
-                        "with mlflow.start_run(run_name=\"iris_rf_v1\"):\n"
+                        "with mlflow_client.start_run(run_name=\"iris_rf_v1\"):\n"
                         "    # Log hyperparameters\n"
                         "    n_estimators = 100\n"
                         "    max_depth = 5\n"
-                        "    mlflow.log_param(\"n_estimators\", n_estimators)\n"
-                        "    mlflow.log_param(\"max_depth\", max_depth)\n\n"
+                        "    mlflow_client.log_param(\"n_estimators\", n_estimators)\n"
+                        "    mlflow_client.log_param(\"max_depth\", max_depth)\n\n"
                         "    # Train model\n"
                         "    model = RandomForestClassifier(\n"
                         "        n_estimators=n_estimators,\n"
@@ -149,124 +145,25 @@ class MLflowNotebookWriter:
                         "    # Log metrics\n"
                         "    train_acc = accuracy_score(y_train, model.predict(X_train))\n"
                         "    test_acc = accuracy_score(y_test, model.predict(X_test))\n"
-                        "    mlflow.log_metric(\"train_accuracy\", train_acc)\n"
-                        "    mlflow.log_metric(\"test_accuracy\", test_acc)\n\n"
+                        "    mlflow_client.log_metric(\"train_accuracy\", train_acc)\n"
+                        "    mlflow_client.log_metric(\"test_accuracy\", test_acc)\n\n"
                         "    print(f\"Train Accuracy: {train_acc:.4f}\")\n"
                         "    print(f\"Test Accuracy: {test_acc:.4f}\")\n"
                         "    print(f\"Run ID: {mlflow.active_run().info.run_id}\")",
             cell_type="code"
         )
 
-    def _add_advanced_tracking_section(self, notebook_writer) -> None:
-        """Add advanced tracking section."""
-        notebook_writer.add_cell(
-            cell_content="## 3. Advanced Tracking\n\n"
-                        "Log additional information like confusion matrices, plots, and model artifacts.",
-            cell_type="markdown"
-        )
-
-        notebook_writer.add_cell(
-            cell_content="# Example 2: Advanced run with artifacts\n"
-                        "with mlflow.start_run(run_name=\"iris_rf_v2\"):\n"
-                        "    # Hyperparameters\n"
-                        "    mlflow.log_param(\"n_estimators\", 200)\n"
-                        "    mlflow.log_param(\"max_depth\", 8)\n\n"
-                        "    # Train model\n"
-                        "    model = RandomForestClassifier(\n"
-                        "        n_estimators=200,\n"
-                        "        max_depth=8,\n"
-                        "        random_state=42\n"
-                        "    )\n"
-                        "    model.fit(X_train, y_train)\n\n"
-                        "    # Log metrics\n"
-                        "    train_acc = accuracy_score(y_train, model.predict(X_train))\n"
-                        "    test_acc = accuracy_score(y_test, model.predict(X_test))\n"
-                        "    mlflow.log_metric(\"train_accuracy\", train_acc)\n"
-                        "    mlflow.log_metric(\"test_accuracy\", test_acc)\n\n"
-                        "    # Log tags for easier filtering\n"
-                        "    mlflow.set_tag(\"model_type\", \"RandomForest\")\n"
-                        "    mlflow.set_tag(\"dataset\", \"iris\")\n\n"
-                        "    print(f\"Test Accuracy: {test_acc:.4f}\")",
-            cell_type="code"
-        )
-
-        notebook_writer.add_cell(
-            cell_content="# Example 3: Compare two model configurations\n"
-                        "configs = [\n"
-                        "    {\"n_estimators\": 50, \"max_depth\": 3},\n"
-                        "    {\"n_estimators\": 150, \"max_depth\": 10},\n"
-                        "]\n\n"
-                        "for i, config in enumerate(configs):\n"
-                        "    with mlflow.start_run(run_name=f\"iris_rf_comparison_{i+1}\"):\n"
-                        "        # Log config\n"
-                        "        for param, value in config.items():\n"
-                        "            mlflow.log_param(param, value)\n\n"
-                        "        # Train and evaluate\n"
-                        "        model = RandomForestClassifier(**config, random_state=42)\n"
-                        "        model.fit(X_train, y_train)\n"
-                        "        test_acc = accuracy_score(y_test, model.predict(X_test))\n"
-                        "        mlflow.log_metric(\"test_accuracy\", test_acc)\n"
-                        "        print(f\"Config {i+1} - Test Accuracy: {test_acc:.4f}\")",
-            cell_type="code"
-        )
-
-    def _add_visualization_section(self, notebook_writer) -> None:
+    def _add_ui_section(self, notebook_writer) -> None:
         """Add visualization and UI section."""
         notebook_writer.add_cell(
-            cell_content="## 4. Viewing Experiments in MLflow UI\n\n"
-                        "You can view all tracked experiments using the MLflow UI dashboard.",
+            cell_content="# Running MLFlow UI\n\n"
+                        "You can either run this cell, which will start the MLflow server, or you can run the command in your terminal. If you run the cell here, it will keep running until you manually stop it. \n\n"
+                        "The MLFlow UI will be available locally [here](http://localhost:5000).",
             cell_type="markdown"
         )
 
         notebook_writer.add_cell(
-            cell_content="# Check the current tracking URI\n"
-                        "tracking_uri = mlflow.get_tracking_uri()\n"
-                        "print(f\"Tracking URI: {tracking_uri}\")\n\n"
-                        "# If using file-based tracking, the URI will be like: file:///path/to/mlruns",
+            cell_content="!mlflow server --port 5000"
             cell_type="code"
         )
 
-        notebook_writer.add_cell(
-            cell_content="# To view experiments locally:\n"
-                        "# 1. Open a terminal in your project directory\n"
-                        "# 2. Run: mlflow ui\n"
-                        "# 3. Open your browser and go to: http://localhost:5000\n"
-                        "#\n"
-                        "# The MLflow UI allows you to:\n"
-                        "# - Compare metrics across runs\n"
-                        "# - View parameter values\n"
-                        "# - Plot performance charts\n"
-                        "# - Download model artifacts",
-            cell_type="code"
-        )
-
-    def _add_tips_section(self, notebook_writer) -> None:
-        """Add best practices and tips section."""
-        notebook_writer.add_cell(
-            cell_content="## 5. Best Practices & Tips\n\n"
-                        "### Logging Best Practices\n"
-                        "- **Use descriptive run names**: `mlflow.start_run(run_name='model_v1')`\n"
-                        "- **Log all hyperparameters**: Makes experiments reproducible\n"
-                        "- **Use tags for organization**: `mlflow.set_tag('dataset', 'iris')`\n"
-                        "- **Log multiple metrics**: accuracy, loss, F1-score, etc.\n\n"
-                        "### Organizing Experiments\n"
-                        "- Use experiment names to group related runs\n"
-                        "- Tag runs with model type, dataset, or version\n"
-                        "- Include relevant notes in run descriptions\n\n"
-                        "### Accessing Logged Data\n"
-                        "- View run data programmatically with `mlflow.search_runs()`\n"
-                        "- Export run data for further analysis\n"
-                        "- Compare metrics across different runs",
-            cell_type="markdown"
-        )
-
-        notebook_writer.add_cell(
-            cell_content="# Example: Query logged experiments programmatically\n"
-                        "import pandas as pd\n\n"
-                        "# Get all runs from the current experiment\n"
-                        "runs = mlflow.search_runs()\n"
-                        "print(f\"Total runs: {len(runs)}\")\n"
-                        "print(\"\\nRun summary:\")\n"
-                        "print(runs[['run_id', 'params.n_estimators', 'metrics.test_accuracy']].head())",
-            cell_type="code"
-        )
