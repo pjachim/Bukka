@@ -128,7 +128,7 @@ class MLflowNotebookWriter:
         )
 
         notebook_writer.add_cell(
-            cell_content="# Example 1: Basic run with parameters and metrics\n"
+            cell_content="# Basic run with parameters and metrics\n"
                         "with mlflow_client.start_run(run_name=\"iris_rf_v1\"):\n"
                         "    # Log hyperparameters\n"
                         "    n_estimators = 100\n"
@@ -154,7 +154,7 @@ class MLflowNotebookWriter:
         )
 
     def _add_ui_section(self, notebook_writer) -> None:
-        """Add visualization and UI section."""
+        """Add UI section."""
         notebook_writer.add_cell(
             cell_content="# Running MLFlow UI\n\n"
                         "You can either run this cell, which will start the MLflow server, or you can run the command in your terminal. If you run the cell here, it will keep running until you manually stop it. \n\n"
