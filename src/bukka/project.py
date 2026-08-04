@@ -262,7 +262,9 @@ class Project:
         
         mlflow_notebook_writer = MLflowNotebookWriter(
             output_path=str(self.file_manager.mlflow_notebook_path),
-            venv_path=venv_path
+            venv_path=venv_path,
+            target_column=self.target_column,
+            problem_type=self.problem_type
         )
         
         logger.info("Writing MLflow tutorial notebook")
