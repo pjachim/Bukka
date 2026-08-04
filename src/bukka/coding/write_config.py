@@ -1,5 +1,5 @@
 from bukka.utils.files.file_manager import FileManager
-
+from pathlib import Path
 CONFIG_TEMPLATE = """
 from pathlib import Path
 
@@ -75,7 +75,7 @@ class ConfigWriter:
         # Append MLflow configuration if enabled
         if self.enable_mlflow:
             if self.mlflow_tracking_uri is None:
-                tracking_uri = f"file:///{self.file_manager.mlruns_path.as_posix()}"
+                tracking_uri = f"sqlite:///{(Path(*self.file_manager.mlruns_path.parts[1:]) / 'mlflow.db').as_posix()}"
             else:
                 tracking_uri = self.mlflow_tracking_uri
             
