@@ -79,6 +79,7 @@ class TestConfigurationExamples:
         assert ConfigValidator.validate_problem_type("other") == "other"
 
         assert PROBLEM_TYPES == [
+            "auto",
             "binary_classification",
             "multiclass_classification",
             "regression",

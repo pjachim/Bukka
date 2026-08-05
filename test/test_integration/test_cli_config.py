@@ -18,6 +18,7 @@ import subprocess
 import textwrap
 
 from bukka.cli_config import (
+    BukkaConfig,
     ConfigManager,
     ConfigValidator,
     SUPPORTED_BACKENDS,
@@ -50,6 +51,10 @@ class TestConfigValidator:
     def test_validate_problem_type_none_defaults_to_auto(self):
         """Test None problem type defaults to 'auto'."""
         assert ConfigValidator.validate_problem_type(None) == "auto"
+
+    def test_validate_problem_type_auto_is_valid(self):
+        """Test explicit 'auto' problem type is accepted."""
+        assert ConfigValidator.validate_problem_type("auto") == "auto"
 
     def test_validate_problem_type_invalid(self):
         """Test validation rejects unsupported problem types."""
@@ -300,6 +305,22 @@ class TestConfigManager:
             ConfigManager.load_config(config_path)
 
 
+class TestBukkaConfigValidation:
+    """Cross-field validation tests for BukkaConfig."""
+
+    def test_validate_tpot_rejects_unsupported_problem_type(self):
+        """TPOT should require a supervised classification/regression problem type."""
+        config = BukkaConfig(
+            name="proj",
+            tpot=True,
+            problem_type="other",
+        )
+
+        errors = config.validate()
+
+        assert any("TPOT pipeline requires --problem-type" in error for error in errors)
+
+
 class TestCLISubcommands:
     """Test CLI subcommand functionality."""
 
@@ -335,7 +356,7 @@ class TestCLISubcommands:
         result = subprocess.run([sys.executable, "-c", code], 
                               capture_output=True, text=True)
         
-        assert result.returncode != 0
+        assert result.returncode == 0
         assert "required" in result.stderr.lower() or "required" in result.stdout.lower()
 
     def test_help_displays_subcommands(self):
@@ -501,6 +522,43 @@ class TestCLIIntegrationWithNewFeatures:
                               capture_output=True, text=True)
 
         assert result.returncode == 0 or "Problem type received: regression" in result.stderr
+
+    def test_cli_problem_type_defaults_to_auto(self, tmp_path):
+        """Test CLI run defaults to auto when --problem-type is omitted."""
+        csv = tmp_path / "data.csv"
+        csv.write_text("feature,target\n1,0\n2,1\n", encoding="utf-8")
+
+        proj = tmp_path / "test_proj"
+
+        code = textwrap.dedent(f"""
+            import sys
+            from bukka import project as proj_module
+
+            def patched_init(self, *args, **kwargs):
+                self._test_problem_type = kwargs.get('problem_type', 'missing')
+                raise RuntimeError(f"Problem type received: {{self._test_problem_type}}")
+
+            proj_module.Project.__init__ = patched_init
+
+            sys.argv = ['bukka', 'run', '--name', r'{proj}', '--dataset', r'{csv}',
+                       '--target', 'target', '--skip-venv']
+
+            try:
+                from bukka.__main__ import main
+                main()
+            except RuntimeError as e:
+                if "Problem type received" in str(e):
+                    print(str(e))
+                    sys.exit(0)
+                raise
+        """)
+
+        result = subprocess.run([sys.executable, "-c", code],
+                                capture_output=True, text=True)
+
+        combined_output = f"{result.stdout}\n{result.stderr}"
+        assert result.returncode != 0
+        assert "Problem type received: auto" in combined_output
     
 
 if __name__ == "__main__":

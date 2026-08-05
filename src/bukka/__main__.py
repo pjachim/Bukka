@@ -234,6 +234,18 @@ For more information, visit: https://github.com/pjachim/Bukka
         type=str,
         help='MLflow tracking URI (default: mlruns/ in project directory)'
     )
+    project_group.add_argument(
+        '--df-profiling',
+        dest='use_df_profiling',
+        action='store_true',
+        help='Include code for DataFrame profiling in the EDA notebook'
+    )
+    project_group.add_argument(
+        '--pygwalker',
+        dest='use_pygwalker',
+        action='store_true',
+        help='Include code for Pygwalker interactive data exploration in the EDA notebook'
+    )
     
     # Data processing settings
     data_group = run_parser.add_argument_group('data processing')
@@ -285,8 +297,8 @@ For more information, visit: https://github.com/pjachim/Bukka
         '--problem-type', '-p',
         type=str,
         choices=PROBLEM_TYPES,
-        default='other',
-        help=f'ML problem type (default: other). Options: {', '.join(PROBLEM_TYPES)}'
+        default=None,
+        help=f"ML problem type (default: auto). Options: {', '.join(PROBLEM_TYPES)}"
     )
     
     # Parse arguments
