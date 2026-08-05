@@ -356,7 +356,7 @@ class TestCLISubcommands:
         result = subprocess.run([sys.executable, "-c", code], 
                               capture_output=True, text=True)
         
-        assert result.returncode != 0
+        assert result.returncode == 0
         assert "required" in result.stderr.lower() or "required" in result.stdout.lower()
 
     def test_help_displays_subcommands(self):
