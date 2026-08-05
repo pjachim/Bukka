@@ -298,7 +298,7 @@ For more information, visit: https://github.com/pjachim/Bukka
         type=str,
         choices=PROBLEM_TYPES,
         default=None,
-        help=f'ML problem type (default: auto). Options: {', '.join(PROBLEM_TYPES)}'
+        help=f"ML problem type (default: auto). Options: {', '.join(PROBLEM_TYPES)}"
     )
     
     # Parse arguments
