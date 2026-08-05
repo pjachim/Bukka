@@ -15,27 +15,23 @@ class EDANotebookWriter:
     venv_path : str | Path | None, optional
         The path to the virtual environment. If provided, the notebook will be
         configured to use the Python interpreter from this environment.
-    target_column : str | None, optional
-        The name of the target column for supervised learning tasks. If None,
-        generates notebook code for unsupervised learning.
-    problem_type : str, optional
-        The type of ML problem ('regression', 'classification', 'auto', etc.).
-        Defaults to 'auto'.
-    enable_mlflow : bool, optional
-        Whether to include MLflow experiment tracking examples. Defaults to False.
+    use_pygwalker : bool, optional
+        Whether to include PyGWalker interactive data exploration cells.
+        Defaults to False.
+    use_df_profiling : bool, optional
+        Whether to include DataFrame profiling cells. Defaults to False.
 
     Examples
     --------
-    >>> writer = StarterNotebookWriter(output_path="starter_notebook.ipynb")
+    >>> writer = EDANotebookWriter(output_path="starter_notebook.ipynb")
     >>> writer.write_notebook()  # Writes the starter notebook to file
 
-    >>> # With virtual environment and supervised learning
-    >>> writer = StarterNotebookWriter(
+    >>> # With virtual environment and optional EDA integrations
+    >>> writer = EDANotebookWriter(
     ...     output_path="starter_notebook.ipynb",
     ...     venv_path=".venv",
-    ...     target_column="target",
-    ...     problem_type="regression",
-    ...     enable_mlflow=True
+    ...     use_pygwalker=True,
+    ...     use_df_profiling=True
     ... )
     >>> writer.write_notebook()  # Writes notebook configured for the venv
     """
