@@ -46,12 +46,12 @@ pytest
 
 Follow this branch flow strictly:
 
-1. Create feature/fix branches from the `release` branch (not from `main`).
-2. Open PRs targeting the `release` branch.
+1. Create feature/fix branches from the active `release/*` branch (for example, `release/1.0.2`), not from `main`.
+2. Open PRs targeting that active `release/*` branch.
 3. Do **not** merge feature/fix branches directly into `main`.
-4. Only the `release` branch is merged into `main`.
+4. Only `release/*` branches are merged into `main`.
 
-This repository uses `release` as the integration gate before `main`.
+This repository uses `release/*` branches as the integration gate before `main`.
 
 ## Runtime agent instructions
 
