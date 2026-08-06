@@ -5,7 +5,6 @@
 from bukka.utils.files.file_manager import FileManager
 from bukka.environment.environment import EnvironmentBuilder
 from bukka.data_management.dataset import Dataset
-#from bukka.coding.write_pipeline import PipelineWriter
 from bukka.coding.write_data_reader_class import DataReaderWriter
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
 from bukka.coding.write_mlflow_notebook import MLflowNotebookWriter
@@ -13,8 +12,8 @@ from bukka.coding.write_pyproject_toml import PyprojectTomlWriter
 from bukka.coding.write_config import ConfigWriter
 from bukka.coding.write_tpot import TPOTWriter
 from bukka.coding.write_dummy import DummyWriter
+from bukka.coding.write_eda_notebook import EDANotebookWriter
 from bukka.utils.bukka_logger import BukkaLogger
-#from bukka.expert_system.pipeline_builder import PipelineBuilder
 
 logger = BukkaLogger(__name__)
 
@@ -76,6 +75,8 @@ class Project:
             target_column: str | None = None,
             skip_venv: bool = False,
             enable_mlflow: bool = False,
+            use_df_profiling: bool = False,
+            use_pygwalker: bool = False,
             mlflow_tracking_uri: str | None = None,
             backend: str = "polars",
             problem_type: str = "auto",
@@ -108,7 +109,8 @@ class Project:
         logger.debug(f"Backend: {backend}")
         logger.debug(f"Problem type: {problem_type}")
         logger.debug(f"MLflow enabled: {enable_mlflow}")
-        
+        logger.debug(f"DataFrame profiling enabled: {use_df_profiling}")
+        logger.debug(f"Pygwalker enabled: {use_pygwalker}")
         self.name: str = name
         self.dataset_path: str | None = dataset_path
         self.file_manager: FileManager | None = None
@@ -124,6 +126,8 @@ class Project:
         self.strata: list[str] | None = strata
         self.dummy: bool = dummy
         self.tpot: bool = tpot
+        self.use_df_profiling: bool = use_df_profiling
+        self.use_pygwalker: bool = use_pygwalker
         logger.debug("Project instance created")
 
     def run(self) -> None:
@@ -162,6 +166,16 @@ class Project:
                 logger.info("MLflow enabled, generating MLflow setup")
                 self._write_mlflow_setup()
                 self._write_mlflow_notebook()
+
+            if self.use_df_profiling or self.use_pygwalker:
+                logger.info("Data exploration tools enabled, generating EDA notebook")
+                eda_writer = EDANotebookWriter(
+                    output_path=str(self.file_manager.eda_notebook_path),
+                    venv_path=None if self.skip_venv else self.file_manager.virtual_env,
+                    use_df_profiling=self.use_df_profiling,
+                    use_pygwalker=self.use_pygwalker
+                )
+                eda_writer.write_notebook()
             
             self._write_starter_notebook()
         else:
@@ -188,62 +202,6 @@ class Project:
             backend=self.backend
         )
         logger.info("Dataset split complete")
-    #def _write_pipeline(
-    #        self,
-    #        target_column: str,
-    #        dataframe_backend: str = "polars",
-    #        strata: list[str] | None = None,
-    #        stratify: bool = True,
-    #    ):
-    #    """Generate a candidate pipeline and save it to the project pipelines folder.
-    #
-    #    This method creates a `Dataset` using the project's `FileManager`, runs
-    #    the expert system `ProblemIdentifier` to detect problems and select
-    #    solutions, and then uses `PipelineWriter` to produce pipeline code.
-    #
-    #    The resulting pipeline text is written to a timestamped file under
-    #    `FileManager.generated_pipes` and the file path is returned.
-    #
-    #    Args:
-    #        target_column: Name of the target column in the dataset (pass
-    #            `None` only if clustering is intended and the Dataset
-    #            backend supports a None target — otherwise provide the
-    #            appropriate column name).
-    #        dataframe_backend: The dataframe backend to use when creating
-    #            the `Dataset` (default: `'polars'`).
-    #
-    #    Returns:
-    #        The absolute path (string) of the written pipeline file.
-    #    """
-    #    logger.info("Starting pipeline generation", format_level='h4')
-    #    logger.debug(f"Target column: {target_column}")
-    #    logger.debug(f"Dataframe backend: {dataframe_backend}")
-    #
-    #    logger.info("Creating Dataset instance")
-    #    dataset = Dataset(
-    #        target_column, 
-    #        self.file_manager,
-    #        strata=strata,
-    #        stratify=stratify,
-    #        train_size=self.train_size,
-    #        backend=dataframe_backend
-    #    )
-    #    logger.debug("Dataset instance created")
-    #    builder = PipelineBuilder(dataset, target_column, problem_type=self.problem_type)
-    #    pipeline_steps = builder.build_pipeline()
-    #
-    #    # Generate pipeline
-    #    timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-    #    filename = f"pipeline_{timestamp}.py"
-    #
-    #    logger.info("Generating pipeline code")
-    #    writer = PipelineWriter(
-    #        pipeline_steps=pipeline_steps,
-    #        output_path=self.file_manager.generated_pipes / filename
-    #    )
-    #    writer.write_code()
-    #    logger.debug(f"Pipeline written to: {self.file_manager.generated_pipes / filename}")
-    #    logger.info("Pipeline generation complete", format_level='h4')
     
     def _write_data_reader_class(self) -> None:
         """Generate and write a data reader class to the project.
@@ -304,7 +262,9 @@ class Project:
         
         mlflow_notebook_writer = MLflowNotebookWriter(
             output_path=str(self.file_manager.mlflow_notebook_path),
-            venv_path=venv_path
+            venv_path=venv_path,
+            target_column=self.target_column,
+            problem_type=self.problem_type
         )
         
         logger.info("Writing MLflow tutorial notebook")
@@ -326,7 +286,7 @@ class Project:
         logger.debug("FileManager initialized")
         
         logger.info("Building project file skeleton")
-        self.file_manager.build_skeleton()
+        self.file_manager.build_skeleton(create_virtual_env=not self.skip_venv)
         logger.info("Project skeleton built successfully")
 
     def _setup_environment(self) -> None:

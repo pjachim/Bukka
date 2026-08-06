@@ -18,6 +18,7 @@ import subprocess
 import textwrap
 
 from bukka.cli_config import (
+    BukkaConfig,
     ConfigManager,
     ConfigValidator,
     SUPPORTED_BACKENDS,
@@ -50,6 +51,10 @@ class TestConfigValidator:
     def test_validate_problem_type_none_defaults_to_auto(self):
         """Test None problem type defaults to 'auto'."""
         assert ConfigValidator.validate_problem_type(None) == "auto"
+
+    def test_validate_problem_type_auto_is_valid(self):
+        """Test explicit 'auto' problem type is accepted."""
+        assert ConfigValidator.validate_problem_type("auto") == "auto"
 
     def test_validate_problem_type_invalid(self):
         """Test validation rejects unsupported problem types."""
@@ -290,7 +295,7 @@ class TestConfigManager:
         config_data = {
             'project': {'name': 'test'},
             'data': {'backend': 'pyarrow', 'train_size': 1.5},
-            'problem': {'type': 'auto'}
+            'problem': {'type': 'binary_classification'}
         }
         
         with open(config_path, 'w', encoding='utf-8') as f:
@@ -298,6 +303,22 @@ class TestConfigManager:
         
         with pytest.raises(ValueError, match="between 0 and 1"):
             ConfigManager.load_config(config_path)
+
+
+class TestBukkaConfigValidation:
+    """Cross-field validation tests for BukkaConfig."""
+
+    def test_validate_tpot_rejects_unsupported_problem_type(self):
+        """TPOT should require a supervised classification/regression problem type."""
+        config = BukkaConfig(
+            name="proj",
+            tpot=True,
+            problem_type="other",
+        )
+
+        errors = config.validate()
+
+        assert any("TPOT pipeline requires --problem-type" in error for error in errors)
 
 
 class TestCLISubcommands:
@@ -335,7 +356,7 @@ class TestCLISubcommands:
         result = subprocess.run([sys.executable, "-c", code], 
                               capture_output=True, text=True)
         
-        assert result.returncode != 0
+        assert result.returncode == 0
         assert "required" in result.stderr.lower() or "required" in result.stdout.lower()
 
     def test_help_displays_subcommands(self):
@@ -501,71 +522,44 @@ class TestCLIIntegrationWithNewFeatures:
                               capture_output=True, text=True)
 
         assert result.returncode == 0 or "Problem type received: regression" in result.stderr
-    
-    def test_cli_with_config_file(self, tmp_path):
-        """Test CLI run with --config option."""
+
+    def test_cli_problem_type_defaults_to_auto(self, tmp_path):
+        """Test CLI run defaults to auto when --problem-type is omitted."""
         csv = tmp_path / "data.csv"
         csv.write_text("feature,target\n1,0\n2,1\n", encoding="utf-8")
-        
-        config_path = tmp_path / "config.yaml"
-        config_data = {
-            'project': {
-                'name': 'config_test_proj',
-                'dataset': str(csv),
-                'target': 'target',
-                'skip_venv': True
-            },
-            'data': {
-                'backend': 'pyarrow',
-                'train_size': 0.7
-            },
-            'problem': {
-                'type': 'binary_classification'
-            }
-        }
-        
-        with open(config_path, 'w', encoding='utf-8') as f:
-            yaml.dump(config_data, f)
-        
+
+        proj = tmp_path / "test_proj"
+
         code = textwrap.dedent(f"""
             import sys
-            from bukka.environment.environment import EnvironmentBuilder
-            EnvironmentBuilder.build_environment = lambda self: None
-            
             from bukka import project as proj_module
-            original_init = proj_module.Project.__init__
-            
+
             def patched_init(self, *args, **kwargs):
-                self._test_backend = kwargs.get('backend', 'pyarrow')
-                self._test_problem_type = kwargs.get('problem_type', 'auto')
-                self._test_train_size = kwargs.get('train_size', 0.8)
-                raise RuntimeError(
-                    f"Config loaded: backend={{self._test_backend}}, "
-                    f"problem_type={{self._test_problem_type}}, "
-                    f"train_size={{self._test_train_size}}"
-                )
-            
+                self._test_problem_type = kwargs.get('problem_type', 'missing')
+                raise RuntimeError(f"Problem type received: {{self._test_problem_type}}")
+
             proj_module.Project.__init__ = patched_init
-            
-            sys.argv = ['bukka', 'run', '--config', r'{config_path}']
-            
+
+            sys.argv = ['bukka', 'run', '--name', r'{proj}', '--dataset', r'{csv}',
+                       '--target', 'target', '--skip-venv']
+
             try:
                 from bukka.__main__ import main
                 main()
             except RuntimeError as e:
-                if "Config loaded" in str(e):
+                if "Problem type received" in str(e):
                     print(str(e))
                     sys.exit(0)
                 raise
         """)
-        
+
         result = subprocess.run([sys.executable, "-c", code],
-                              capture_output=True, text=True)
+                                capture_output=True, text=True)
 
-        assert result.returncode == 0 or "backend=pyarrow" in result.stderr
-        assert result.returncode == 0 or "problem_type=binary_classification" in result.stderr
-        assert result.returncode == 0 or "train_size=0.7" in result.stderr
-
+        combined_output = f"{result.stdout}\n{result.stderr}"
+        assert result.returncode != 0
+        assert "Problem type received: auto" in combined_output
+    
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

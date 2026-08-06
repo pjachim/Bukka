@@ -34,9 +34,21 @@ class TPOTWriter:
         self.file_manager = file_manager
         self.model_type = model_type
 
+    def _resolve_tpot_model(self) -> str:
+        """Resolve a TPOT class name for the requested problem type."""
+        if self.model_type not in TPOT_MAPPING:
+            supported_types = ', '.join(sorted(TPOT_MAPPING))
+            raise ValueError(
+                "TPOT pipeline generation requires a supervised problem type. "
+                f"Supported problem types: {supported_types}. "
+                f"Got '{self.model_type}'."
+            )
+
+        return TPOT_MAPPING[self.model_type]
+
     def write_tpot_pipeline(self) -> None:
         """Writes the TPOT model class to the specified output path."""
-        content = PIPELINE_TEMPLATE.format(tpot_model=TPOT_MAPPING[self.model_type])
+        content = PIPELINE_TEMPLATE.format(tpot_model=self._resolve_tpot_model())
     
         with open(self.file_manager.tpot_pipe_path, 'w') as f:
             f.write(content)

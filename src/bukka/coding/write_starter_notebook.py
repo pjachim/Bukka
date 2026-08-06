@@ -71,7 +71,7 @@ class StarterNotebookWriter:
             if self.enable_mlflow:
                 self._add_mlflow_cells(notebook_writer)
 
-    def _add_supervised_cells(self, notebook_writer) -> None:
+    def _add_supervised_cells(self, notebook_writer: JupyterWriter) -> None:
         """Add cells for supervised learning tasks."""
         notebook_writer.add_cell(
             cell_content="## Data Loading\n\nThe following code snippet demonstrates how to load your training and testing data using the `DataReader` class provided by Bukka.",
@@ -86,7 +86,7 @@ class StarterNotebookWriter:
                 "X_train, y_train = data_reader.readXy_train()\n"
                 "X_test, y_test = data_reader.readXy_test()\n\n"
                 "# Display the first few rows of the training data\n"
-                "X_train.head()"
+                "display(X_train)"
             ),
             cell_type="code"
         )
@@ -122,7 +122,7 @@ class StarterNotebookWriter:
         else:
             self._add_classification_evaluation_cell(notebook_writer)
 
-    def _add_classification_evaluation_cell(self, notebook_writer) -> None:
+    def _add_classification_evaluation_cell(self, notebook_writer: JupyterWriter) -> None:
         """Add classification evaluation metrics cell."""
         notebook_writer.add_cell(
             cell_content=(
@@ -138,7 +138,7 @@ class StarterNotebookWriter:
             cell_type="code"
         )
 
-    def _add_regression_evaluation_cell(self, notebook_writer) -> None:
+    def _add_regression_evaluation_cell(self, notebook_writer: JupyterWriter) -> None:
         """Add regression evaluation metrics cell."""
         notebook_writer.add_cell(
             cell_content=(
@@ -159,7 +159,7 @@ class StarterNotebookWriter:
             cell_type="code"
         )
 
-    def _add_unsupervised_cells(self, notebook_writer) -> None:
+    def _add_unsupervised_cells(self, notebook_writer: JupyterWriter) -> None:
         """Add cells for unsupervised learning tasks."""
         notebook_writer.add_cell(
             cell_content="## Data Loading\n\nThe following code snippet demonstrates how to load your training and testing data using the `DataReader` class provided by Bukka.",
@@ -223,7 +223,7 @@ class StarterNotebookWriter:
             cell_type="code"
         )
 
-    def _add_mlflow_cells(self, notebook_writer) -> None:
+    def _add_mlflow_cells(self, notebook_writer: JupyterWriter) -> None:
         """Add MLflow experiment tracking cells."""
         notebook_writer.add_cell(
             cell_content="## MLflow Experiment Tracking\n\nThis project is configured with MLflow for experiment tracking. "

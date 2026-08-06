@@ -1,4 +1,3 @@
-requirements= '''
 scikit-learn
 seaborn
 numpy
@@ -8,4 +7,3 @@ pyarrow
 fg-data-profiling
 pygwalker
 mlflow
-'''

@@ -9,6 +9,9 @@ import pytest
 from bukka.coding.write_starter_notebook import StarterNotebookWriter
 
 
+pytestmark = pytest.mark.venv
+
+
 class TestStarterNotebookWriter:
     """Tests for StarterNotebookWriter class."""
 

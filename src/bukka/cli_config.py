@@ -22,6 +22,7 @@ SUPPORTED_BACKENDS = [
 
 # Problem types
 PROBLEM_TYPES = [
+    "auto",  # Let Bukka infer/route defaults for generic flows
     "binary_classification",
     "multiclass_classification", 
     "regression",
@@ -80,6 +81,8 @@ class BukkaConfig:
     target: str | None = None
     skip_venv: bool = False
     enable_mlflow: bool = False
+    use_df_profiling: bool = False
+    use_pygwalker: bool = False
     mlflow_tracking_uri: str | None = None
     
     # Data settings
@@ -144,6 +147,8 @@ class BukkaConfig:
             target=get_value('target', ('project', 'target')),
             skip_venv=get_value('skip_venv', ('project', 'skip_venv'), False),
             enable_mlflow=get_value('enable_mlflow', ('project', 'enable_mlflow'), False),
+            use_df_profiling=get_value('use_df_profiling', ('project', 'use_df_profiling'), False),
+            use_pygwalker=get_value('use_pygwalker', ('project', 'use_pygwalker'), False),
             mlflow_tracking_uri=get_value('mlflow_tracking_uri', ('project', 'mlflow_tracking_uri')),
             backend=get_value('backend', ('data', 'backend'), 'pyarrow'),
             train_size=get_value('train_size', ('data', 'train_size'), 0.8),
@@ -184,6 +189,27 @@ class BukkaConfig:
                     validator(value)
                 except exceptions as e:
                     errors.append(str(e))
+
+        supported_model_problem_types = {
+            "binary_classification",
+            "multiclass_classification",
+            "regression",
+        }
+
+        # Dummy/TPOT templates only support supervised classifier/regressor families.
+        if self.dummy and self.problem_type not in supported_model_problem_types:
+            errors.append(
+                "Dummy pipeline requires --problem-type to be one of: "
+                f"{', '.join(sorted(supported_model_problem_types))}. "
+                f"Got '{self.problem_type}'."
+            )
+
+        if self.tpot and self.problem_type not in supported_model_problem_types:
+            errors.append(
+                "TPOT pipeline requires --problem-type to be one of: "
+                f"{', '.join(sorted(supported_model_problem_types))}. "
+                f"Got '{self.problem_type}'."
+            )
         
         return errors
     
@@ -213,6 +239,8 @@ class BukkaConfig:
             'strata': self.strata,
             'dummy': self.dummy,
             'tpot': self.tpot,
+            'use_df_profiling': self.use_df_profiling,
+            'use_pygwalker': self.use_pygwalker,
         }
 
 
